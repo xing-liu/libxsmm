@@ -61,10 +61,11 @@ int *stream = handle->compute_fwd_indices_ptrs[ltid];
 int *bn_stream = handle->bn_stats_indices_ptrs[ltid];
 
 /* Batch stats related variables */
-int nImg = 0, work = 0, chunksize = 0, thr_begin = 0, thr_end = 0, fm = 0;
+int nImg = 0, work = 0, chunksize = 0, thr_begin = 0, thr_end = 0, fm = 0, nBlocksFm = 0, imgfm = 0, hi = 0, ho = 0, wi = 0, wo = 0;
 float nhw, recp_nhw, sqrt_eps = 1e-7f;
 float *sum_img_ptr = NULL, *sumsq_img_ptr = NULL;
 libxsmm_dnn_fusedbatchnorm *bn_handle = NULL;
+
 #if defined(LIBXSMM_INTRINSICS_AVX512)
 __m512 lcl_vsum, lcl_vsumsq, lcl_vsqrt_eps, lcl_vrec_nhw, lcl_vone, lcl_vbmean, lcl_vbmeansq, lcl_vsqbmean, lcl_vbrstd, lcl_vvar;
 #else
@@ -193,10 +194,37 @@ if (handle->fuse_batchstats_fwd == 1) {
 
 if (handle->fuse_bn_apply_fwd) {
   /* Upfront copy the input to scratch8 and do the batchnorm  */
-#if 0
-  for ( imgfm = thr_begin; imgfm < thr_end; ++imgfm ) {
-    __m512 lcl_vgamma, lcl_vbeta, lcl_vbmean, lcl_vbrstd;
+  bn_handle = handle->pre_bn;
+  nImg = bn_handle->desc.N;
+  const int ifh = bn_handle->desc.H;
+  const int ifw = bn_handle->desc.W;
+  const int sh = bn_handle->desc.u;
+  const int sw = bn_handle->desc.v;
+  const int ofh = ifh/sh;
+  const int ofw = ifw/sw;
+  const int iph = bn_handle->desc.pad_h_in;
+  const int ipw = bn_handle->desc.pad_w_in;
+  const int oph = bn_handle->desc.pad_h_out;
+  const int opw = bn_handle->desc.pad_w_out;
+  const int ofhp = ofh + 2*oph;
+  const int ofwp = ofw + 2*opw;
+  const int ifhp = ifh + 2*iph;
+  const int ifwp = ifw + 2*ipw;
+  LIBXSMM_VLA_DECL(2, const float, gamma,     (float*)bn_handle->reg_gamma->data,   16);
+  LIBXSMM_VLA_DECL(2, const float, beta,      (float*)bn_handle->reg_beta->data,    16);
+  LIBXSMM_VLA_DECL(2,       float, bmean,     (float*)bn_handle->expvalue->data,    16);
+  LIBXSMM_VLA_DECL(2,       float, brstd,     (float*)bn_handle->rcpstddev->data,   16);
+  LIBXSMM_VLA_DECL(5, const element_input_type, input_bn,     (element_input_type*)bn_handle->reg_input->data,  nBlocksFm, ifhp, ifwp, 16);
+  LIBXSMM_VLA_DECL(5, const element_input_type, input_add, (element_input_type* )bn_handle->reg_add->data,    nBlocksFm, ifhp, ifwp, 16);
+  LIBXSMM_VLA_DECL(5, element_output_type,      output_bn,    (element_output_type*)handle->scratch8, nBlocksFm, ofhp, ofwp, 16);
 
+  nBlocksFm = handle->blocksifm;
+  work = nImg * nBlocksFm;
+  chunksize = (work % handle->desc.threads == 0) ? (work / handle->desc.threads) : ((work / handle->desc.threads) + 1);
+  thr_begin = (ltid * chunksize < work) ? (ltid * chunksize) : work;
+  thr_end = ((ltid + 1) * chunksize < work) ? ((ltid + 1) * chunksize) : work;
+  for ( imgfm = thr_begin; imgfm < thr_end; ++imgfm ) {
+    __m512 lcl_vgamma, lcl_vbeta;
     img = imgfm / nBlocksFm;
     fm = imgfm % nBlocksFm;
     lcl_vgamma = _mm512_loadu_ps( &LIBXSMM_VLA_ACCESS(2, gamma,     fm, 0, 16) );
@@ -205,37 +233,29 @@ if (handle->fuse_bn_apply_fwd) {
     lcl_vbrstd = _mm512_loadu_ps( &LIBXSMM_VLA_ACCESS(2, brstd,     fm, 0, 16) );
 
     for ( hi=iph, ho=oph; hi < (ifh+iph); hi+=sh, ho++ ) {
-      const element_input_type*  input_ptr     = &LIBXSMM_VLA_ACCESS(5, input,     img, fm, hi, ipw, 0, nBlocksFm, ifhp, ifwp, 16);
-#if defined(LIBXSMM_DNN_FUSEDBN_FWD_ENABLE_ELTWISE)
+      input_ptr     = &LIBXSMM_VLA_ACCESS(5, input_bn,     img, fm, hi, ipw, 0, nBlocksFm, ifhp, ifwp, 16);
       const element_input_type*  input_add_ptr = &LIBXSMM_VLA_ACCESS(5, input_add, img, fm, hi, ipw, 0, nBlocksFm, ifhp, ifwp, 16);
-#endif
-      element_output_type* output_ptr    = &LIBXSMM_VLA_ACCESS(5, output,    img, fm, ho, opw, 0, nBlocksFm, ofhp, ofwp, 16);
+      element_output_type* output_ptr    = &LIBXSMM_VLA_ACCESS(5, output_bn,    img, fm, ho, opw, 0, nBlocksFm, ofhp, ofwp, 16);
       for ( wi=ipw, wo=opw; wi < (ifw+ipw); wi+=sw, wo++ ) {
         __m512 lcl_vo;
-
         /* BN + scale (gamma, beta) */
-        lcl_vo = _mm512_sub_ps( _mm512_load_act( input_ptr ), lcl_vbmean );
+        lcl_vo = _mm512_sub_ps( _mm512_loadu_ps( input_ptr ), lcl_vbmean );
         lcl_vo = _mm512_mul_ps( lcl_vgamma, lcl_vo );
         lcl_vo = _mm512_fmadd_ps( lcl_vo, lcl_vbrstd, lcl_vbeta );
         /* eltwise add */
-#if defined(LIBXSMM_DNN_FUSEDBN_FWD_ENABLE_ELTWISE)
-        lcl_vo = _mm512_add_ps( lcl_vo, _mm512_load_act( input_add_ptr ) );
-#endif
+        lcl_vo = _mm512_add_ps( lcl_vo, _mm512_loadu_ps( input_add_ptr ) );
         /* ReLU */
-#if defined(LIBXSMM_DNN_FUSEDBN_FWD_ENABLE_RELU)
         lcl_vo = _mm512_max_ps( lcl_vo, _mm512_setzero_ps() );
-#endif
-        _mm512_stream_act( output_ptr, lcl_vo );
+        _mm512_stream_ps( output_ptr, lcl_vo );
 
         input_ptr += sw*16;
-#if defined(LIBXSMM_DNN_FUSEDBN_FWD_ENABLE_ELTWISE)
         input_add_ptr += sw*16;
-#endif
         output_ptr += 16;
       }
     }
   }
-#endif
+  output_base = ((element_output_type*)handle->scratch8) + (handle->desc.pad_h_out * handle->ofwp + handle->desc.pad_w_out) * (handle->ofmblock);
+  libxsmm_barrier_wait(handle->barrier, ltid);
 } 
 
 i = 0;
