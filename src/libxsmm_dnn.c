@@ -230,6 +230,9 @@ LIBXSMM_API libxsmm_dnn_layer* libxsmm_dnn_create_conv_layer(
     handle->fuse_batchstats_bwd = 0;
     handle->fuse_eltwise_bwd = 0;
     handle->fuse_relu_bwd = 0;
+    handle->fuse_bn_apply_fwd = 0;
+    handle->fuse_bn_apply_bwd = 0;
+    handle->fuse_bn_apply_upd = 0;
 
     /* TODO: This check should be removed when this fuse flag is deprecated */
     if (handle->fuse_ops & LIBXSMM_DNN_CONV_FUSE_BATCH_STATS_FWD) {
@@ -247,7 +250,17 @@ LIBXSMM_API libxsmm_dnn_layer* libxsmm_dnn_create_conv_layer(
       }
       if (handle->desc.pre_bn != NULL) {
         handle->fuse_batchstats_bwd = 1;
-     }
+      }
+    }
+    if (handle->fuse_ops & LIBXSMM_DNN_CONV_FUSE_BATCHNORM_APPLY) {
+      if (handle->desc.pre_bn != NULL) {
+        handle->fuse_bn_apply_fwd = 1;
+      }
+      if (handle->desc.post_bn != NULL) {
+        handle->fuse_bn_apply_bwd = 1;
+      }
+      /* FIXME: Should we guard it with something? */
+      handle->fuse_bn_apply_upd = 1;
     }
 
     handle->options = conv_desc.options;
@@ -1726,7 +1739,7 @@ LIBXSMM_API size_t libxsmm_dnn_get_scratch_size(const libxsmm_dnn_layer* handle,
                                              if (handle->padding_flag == 1) {
                                                l_scratch_size = handle->fwdbwd_scratch_size + 64;
                                              }
-                                             if (handle->fuse_bn_fwd_application == 1) {
+                                             if (handle->fuse_bn_apply_fwd == 1) {
                                                l_scratch_size += handle->scratch8_size+  64;
                                              }
 #if !defined(LIBXSMM_DNN_VLA_TLS1)
@@ -1751,7 +1764,7 @@ LIBXSMM_API size_t libxsmm_dnn_get_scratch_size(const libxsmm_dnn_layer* handle,
                                              if (handle->padding_flag == 1) {
                                                l_scratch_size += handle->fwdbwd_scratch_size + 64;
                                              }
-                                             if (handle->fuse_bn_bwd_application == 1) {
+                                             if (handle->fuse_bn_apply_bwd == 1) {
                                                l_scratch_size += handle->scratch8_size+  64;
                                              }
 #if !defined(LIBXSMM_DNN_VLA_TLS1)
@@ -1775,7 +1788,7 @@ LIBXSMM_API size_t libxsmm_dnn_get_scratch_size(const libxsmm_dnn_layer* handle,
                                              if (handle->upd_use_thread_fil == 1) {
                                                l_scratch_size += handle->scratch4_size + 64;
                                              }
-                                             if (handle->fuse_bn_upd_application == 1) {
+                                             if (handle->fuse_bn_apply_upd == 1) {
                                                l_scratch_size += handle->scratch8_size+  64;
                                              }
 #if !defined(LIBXSMM_DNN_VLA_TLS1)
@@ -1804,7 +1817,7 @@ LIBXSMM_API size_t libxsmm_dnn_get_scratch_size(const libxsmm_dnn_layer* handle,
                                              if (handle->use_lp_kernel == 1) {
                                                l_scratch_size += handle->scratch2_size + 64;
                                              }
-                                             if (handle->fuse_bn_fwd_application || handle->fuse_bn_bwd_application || handle->fuse_bn_upd_application) {
+                                             if (handle->fuse_bn_apply_fwd || handle->fuse_bn_apply_bwd || handle->fuse_bn_apply_upd) {
                                                l_scratch_size += handle->scratch8_size+  64;
                                              }
                                              /* we need a minibatch copy for transpose of input, scratch3 */
