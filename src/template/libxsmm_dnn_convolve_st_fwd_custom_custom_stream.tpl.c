@@ -191,6 +191,11 @@ if (handle->fuse_batchstats_fwd == 1) {
   }
 }
 
+if (1) {
+  /* Ufront copy the input to scratch8 and do the batchnorm  */
+
+} 
+
 i = 0;
 if (n_segments) {
   /* We have segmented the stream of convolutions since we need to inject different functionalities...  */

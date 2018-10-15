@@ -395,6 +395,9 @@ LIBXSMM_EXTERN_C struct LIBXSMM_RETARGETABLE libxsmm_dnn_layer {
   int loop_order;
   int f32_bf16_cvt_rne;
   int fwd_img_par;
+  int fuse_bn_fwd_application;
+  int fuse_bn_bwd_application;
+  int fuse_bn_upd_application;
 
   /* internal data representation */
   libxsmm_dnn_tensor* reg_input;
@@ -437,6 +440,9 @@ LIBXSMM_EXTERN_C struct LIBXSMM_RETARGETABLE libxsmm_dnn_layer {
   void* scratch7;             /* TLS: filter_scratch (generic WU) */
   size_t scratch7_size;
 #endif
+  void* scratch8;
+  size_t scratch8_size;
+
   size_t minibatch_scratch_size;
   size_t fwdbwd_scratch_size;
   int padding_flag;           /* Flag that dictates if we should apply padding in the input */
