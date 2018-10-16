@@ -254,7 +254,7 @@ if (handle->fuse_bn_apply_fwd) {
       }
     }
   }
-  output_base = ((element_output_type*)handle->scratch8) + (handle->desc.pad_h_out * handle->ofwp + handle->desc.pad_w_out) * (handle->ofmblock);
+  input_base = (element_input_type*)handle->scratch8;
   libxsmm_barrier_wait(handle->barrier, ltid);
 } 
 
