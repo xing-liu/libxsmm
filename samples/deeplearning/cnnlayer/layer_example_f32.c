@@ -42,9 +42,10 @@
 
 # define USE_OVERWRITE
 /*# define USE_BWD_NO_FILTER_TRANSPOSE_OVERWRITE*/
-/*# define USE_FUSED_BATCH_STATS*/
-/*# define USE_FUSED_BN_APPLY*/
-/*# define USE_FUSED_BN_APPLY*/
+/* Below should fuse only the stats part of bn */
+/*# define USE_FUSED_BATCH_STATS */
+/* Below should fuse stats + apply part of bn  */
+/*# define USE_FUSED_BATCHNORM */
 /*# define USE_FUSED_RELU_BWD*/
 
 #if !defined(USE_FUSED_BIAS) && 0
@@ -503,7 +504,7 @@ int main(int argc, char* argv[])
   float *input_nhwc, *output_nhwc, *filter_rsck, *dinput_nhwc, *doutput_nhwc, *dfilter_rsck, *naive_output_nhwc, *naive_input_nhwc;
   float *naive_bias, *bias_libxsmm, *naive_dbias, *dbias_libxsmm, *bias_nhwc, *dbias_nhwc, *naive_libxsmm_del_input_add, *naive_bn_input, *naive_dbeta, *naive_dgamma, *naive_bmean, *naive_rcpstddev, *naive_del_input_add;
   float *input_libxsmm, *filter_libxsmm, *output_libxsmm, *dinput_libxsmm, *dfilter_libxsmm, *doutput_libxsmm, *filtertr_libxsmm;
-#if defined(USE_FUSED_BATCH_STATS)
+#if (defined(USE_FUSED_BATCH_STATS) || defined(USE_FUSED_BATCHNORM))
   float *expectval_libxsmm, *rcpstddev_libxsmm, *variance_libxsmm;
   libxsmm_dnn_fusedbatchnorm_desc fusedbatchnorm_desc_post;
   libxsmm_dnn_fusedbatchnorm *libxsmm_bn_handle_post;
@@ -562,7 +563,7 @@ int main(int argc, char* argv[])
   libxsmm_dnn_tensor* libxsmm_filter_tr;
   libxsmm_dnn_tensor* libxsmm_bias;
   libxsmm_dnn_tensor* libxsmm_dbias;
-#ifdef USE_FUSED_BATCH_STATS
+#if (defined(USE_FUSED_BATCH_STATS) || defined(USE_FUSED_BATCHNORM))
   libxsmm_dnn_tensor*  libxsmm_expectval;
   libxsmm_dnn_tensor*  libxsmm_rcpstddev;
   libxsmm_dnn_tensor*  libxsmm_variance;
@@ -717,7 +718,7 @@ int main(int argc, char* argv[])
   dfilter_libxsmm       = (float*)libxsmm_aligned_malloc( nOfm*nIfm*kh*kw*    sizeof(float), 2097152);
   doutput_libxsmm       = (float*)libxsmm_aligned_malloc( nImg*nOfm*ofhp*ofwp*sizeof(float), 2097152);
   filtertr_libxsmm      = (float*)libxsmm_aligned_malloc( nOfm*nIfm*kh*kw*    sizeof(float), 2097152);
-#ifdef USE_FUSED_BATCH_STATS
+#if (defined(USE_FUSED_BATCH_STATS) ||  defined(USE_FUSED_BATCHNORM))
   expectval_libxsmm     = (float*)libxsmm_aligned_malloc( nOfm*               sizeof(float), 2097152);
   rcpstddev_libxsmm     = (float*)libxsmm_aligned_malloc( nOfm*               sizeof(float), 2097152);
   variance_libxsmm      = (float*)libxsmm_aligned_malloc( nOfm*               sizeof(float), 2097152);
@@ -751,7 +752,7 @@ int main(int argc, char* argv[])
     copy_internal_nchw( naive_input , naive_input_tmp, nImg, nIfm, ifh, ifw, pad_h, pad_w);
     libxsmm_free(naive_input_tmp);
   }
-#if (defined(USE_FUSED_RELU_BWD) || defined(USE_FUSED_BATCH_STATS))
+#if (defined(USE_FUSED_RELU_BWD) || defined(USE_FUSED_BATCH_STATS) ||  defined(USE_FUSED_BATCHNORM))
   /* Initialize some entries with zeros  */
   for (i = 0; i < nImg*nIfm*ifhp*ifwp; i++ ) {
     if ( ((i%16) == 2) || ((i%16) == 3) || ((i%16) == 7) || ((i%16) == 14) ) {
@@ -805,7 +806,7 @@ int main(int argc, char* argv[])
   copy_buf(naive_bias, bias_nhwc, nOfm);
   copy_buf(naive_dbias, dbias_nhwc, nOfm);
 
-#ifdef USE_FUSED_BATCH_STATS
+#if (defined(USE_FUSED_BATCH_STATS) ||  defined(USE_FUSED_BATCHNORM))
   init_buf(naive_bmean,           nIfm, 0, 0);
   init_buf(naive_rcpstddev,       nIfm, 0, 0);
   init_buf(naive_dgamma,          nIfm, 0, 0);
@@ -895,6 +896,8 @@ int main(int argc, char* argv[])
     conv_desc.fuse_ops = LIBXSMM_DNN_CONV_FUSE_BIAS_RELU;
 #elif defined(USE_FUSED_BATCH_STATS)
     conv_desc.fuse_ops = LIBXSMM_DNN_CONV_FUSE_BATCHNORM_STATS;
+#elif defined(USE_FUSED_BATCHNORM)
+    conv_desc.fuse_ops = LIBXSMM_DNN_CONV_FUSE_BATCHNORM;
 #elif defined(USE_FUSED_RELU_BWD)
     conv_desc.fuse_ops = LIBXSMM_DNN_CONV_FUSE_RELU_BWD;
 #elif defined(USE_FUSED_BATCH_STATCH_RELU_BWD)
@@ -908,7 +911,7 @@ int main(int argc, char* argv[])
     conv_desc.pre_bn = NULL;
     conv_desc.post_bn = NULL;
 
-#if defined(USE_FUSED_BATCH_STATS)
+#if (defined(USE_FUSED_BATCH_STATS) || defined(USE_FUSED_BATCHNORM))
     fusedbatchnorm_desc_post.N = nImg;
     fusedbatchnorm_desc_post.C = nOfm;
     fusedbatchnorm_desc_post.H = ofh;
@@ -976,7 +979,7 @@ int main(int argc, char* argv[])
     libxsmm_filter_tr  = libxsmm_dnn_link_tensor( libxsmm_layout, filtertr_libxsmm, &status ); CHKERR_LIBXSMM_DNN( status );
     libxsmm_dnn_destroy_tensor_datalayout( libxsmm_layout );
 
-#ifdef USE_FUSED_BATCH_STATS
+#if (defined(USE_FUSED_BATCH_STATS) || defined(USE_FUSED_BATCHNORM))
     libxsmm_layout = libxsmm_dnn_fusedbatchnorm_create_tensor_datalayout( libxsmm_bn_handle_post, LIBXSMM_DNN_CHANNEL_EXPECTVAL, &status ); CHKERR_LIBXSMM_DNN( status );
     libxsmm_expectval  = libxsmm_dnn_link_tensor( libxsmm_layout, expectval_libxsmm, &status ); CHKERR_LIBXSMM_DNN( status );
     libxsmm_dnn_destroy_tensor_datalayout( libxsmm_layout );
@@ -1033,7 +1036,7 @@ int main(int argc, char* argv[])
     CHKERR_LIBXSMM_DNN( libxsmm_dnn_bind_tensor( libxsmm_handle, libxsmm_bias,       LIBXSMM_DNN_REGULAR_CHANNEL_BIAS ) );
     CHKERR_LIBXSMM_DNN( libxsmm_dnn_bind_tensor( libxsmm_handle, libxsmm_dbias,      LIBXSMM_DNN_GRADIENT_CHANNEL_BIAS ) );
     CHKERR_LIBXSMM_DNN( libxsmm_dnn_bind_tensor( libxsmm_handle, libxsmm_filter_tr,  LIBXSMM_DNN_REGULAR_FILTER_TRANS ) );
-#ifdef USE_FUSED_BATCH_STATS
+#if (defined(USE_FUSED_BATCH_STATS) || defined(USE_FUSED_BATCHNORM))
     CHKERR_LIBXSMM_DNN( libxsmm_dnn_fusedbatchnorm_bind_tensor( libxsmm_bn_handle_post, libxsmm_expectval,    LIBXSMM_DNN_CHANNEL_EXPECTVAL ) );
     CHKERR_LIBXSMM_DNN( libxsmm_dnn_fusedbatchnorm_bind_tensor( libxsmm_bn_handle_post, libxsmm_rcpstddev,    LIBXSMM_DNN_CHANNEL_RCPSTDDEV ) );
     CHKERR_LIBXSMM_DNN( libxsmm_dnn_fusedbatchnorm_bind_tensor( libxsmm_bn_handle_post, libxsmm_variance,     LIBXSMM_DNN_CHANNEL_VARIANCE  ) );
