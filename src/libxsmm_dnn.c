@@ -260,7 +260,7 @@ LIBXSMM_API libxsmm_dnn_layer* libxsmm_dnn_create_conv_layer(
         handle->fuse_bn_apply_bwd = 1;
       }
       /* FIXME: Should we guard it with something? */
-      handle->fuse_bn_apply_upd = 1;
+      //handle->fuse_bn_apply_upd = 1;
     }
 
     handle->options = conv_desc.options;

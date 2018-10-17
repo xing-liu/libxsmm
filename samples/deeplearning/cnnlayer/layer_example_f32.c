@@ -43,10 +43,10 @@
 # define USE_OVERWRITE
 /*# define USE_BWD_NO_FILTER_TRANSPOSE_OVERWRITE*/
 /* Below should fuse only the stats part of bn */
-/*# define USE_FUSED_BATCH_STATS */
+# define USE_FUSED_BATCH_STATS 
 /* Below should fuse stats + apply part of bn  */
 //# define USE_FUSED_BATCHNORM
-# define USE_FUSED_RELU_BWD
+/*# define USE_FUSED_RELU_BWD*/
 
 #if !defined(USE_FUSED_BIAS) && 0
 # define USE_FUSED_BIAS
@@ -94,10 +94,6 @@ typedef struct {
   int W;
   int stride_h;
   int stride_w;
-  int pad_h_in;
-  int pad_w_in;
-  int pad_w_out;
-  int pad_h_out;
   int norm_type;  /* 0: full batchnorm, 1: batch scaling only */
   int fuse_type;  /* 0: nothing fused, 1: relu fused, 2: elementwise fused, 3: relu and elementwise fused */
 } naive_fusedbatchnorm_t;
@@ -204,6 +200,92 @@ LIBXSMM_INLINE void naive_copy_RSCK_to_KCRS(const float* rsck, float* kcrs, int 
   }
 }
 
+LIBXSMM_INLINE void naive_fusedbatchnorm_fp(naive_fusedbatchnorm_t* param, const float* input_ptr, float* output_ptr, const float* input_add_ptr,
+                                     const float* beta_ptr, const float* gamma_ptr, float* expectval_ptr, float* rcpstddev_ptr, float* variance_ptr)
+{
+  const int nImg = param->N;
+  const int nFm = param->C;
+  const int ifh = param->H;
+  const int ifw = param->W;
+  const int sh = param->stride_h;
+  const int sw = param->stride_w;
+  const int ofh = ifh/sh;
+  const int ofw = ifw/sw;
+  const float nhw = (float)(nImg * ifh * ifw);
+  const float recp_nhw = 1.0f/nhw;
+  const float sqrt_eps = 1e-7f;
+
+  int img, fm, hi, wi, ho, wo;
+
+  LIBXSMM_VLA_DECL(4, const float, input,     input_ptr,     nFm, ifh, ifw);
+  LIBXSMM_VLA_DECL(4, const float, input_add, input_add_ptr, nFm, ifh, ifw);
+  LIBXSMM_VLA_DECL(4,       float, output,    output_ptr,    nFm, ofh, ofw);
+
+  if ( param->norm_type == 0 ) {
+#if defined(_OPENMP)
+#pragma omp parallel for private(img, fm, hi, wi)
+#endif
+    for (fm = 0; fm < nFm; fm++) {
+      float ch_sum = 0.0f;
+      float ch_sumsq = 0.0f;
+      float tbmean = 0.0f;
+      float tbmeansq = 0.0f;
+      float tsqbmean = 0.0f;
+      float tbrstd = 0.0f;
+      float tvariance = 0.0f;
+
+      for ( img = 0; img < nImg; img++ ) {
+        for ( hi = 0; hi < ifh; hi++ ) {
+          for ( wi = 0; wi < ifw; wi++ ) {
+            const float input_val = LIBXSMM_VLA_ACCESS(4, input, img, fm, hi, wi, nFm, ifh, ifw);
+            ch_sum   += input_val;
+            ch_sumsq += (input_val * input_val);
+          }
+        }
+      }
+
+      tbmean = (recp_nhw * ch_sum) ;
+      tbmeansq  = tbmean * tbmean;
+      tsqbmean = recp_nhw * ch_sumsq;
+      tvariance = tsqbmean - tbmeansq;
+      tbrstd = (float)(1.0/sqrt(tvariance + sqrt_eps));
+      expectval_ptr[fm] = tbmean;
+      rcpstddev_ptr[fm] = tbrstd;
+      variance_ptr[fm] = tvariance;
+    }
+  }
+
+#if 0
+#if defined(_OPENMP)
+#pragma omp parallel for private(img, fm, hi, wi, ho, wo)
+#endif
+  for ( img = 0; img < nImg; img++ ) {
+    for ( fm = 0; fm < nFm; fm++ ) {
+      for ( hi = 0, ho = 0; hi < ifh; hi += sh, ho++ ) {
+        for ( wi = 0, wo = 0; wi < ifw; wi += sw, wo++ ) {
+          const float  input_val     =  LIBXSMM_VLA_ACCESS(4, input,     img, fm, hi, wi, nFm, ifh, ifw);
+          const float  input_add_val =  LIBXSMM_VLA_ACCESS(4, input_add, img, fm, hi, wi, nFm, ifh, ifw);
+                float* output_ptr2   = &LIBXSMM_VLA_ACCESS(4, output,    img, fm, ho, wo, nFm, ofh, ofw);
+
+          /* BN + scale (gamma, beta) */
+          float o = gamma_ptr[fm]*(input_val - expectval_ptr[fm])*rcpstddev_ptr[fm] + beta_ptr[fm];
+          /* Eltwise */
+          if ( (param->fuse_type == 2) || (param->fuse_type == 3) ) {
+            o += input_add_val;
+          }
+          /* ReLU */
+          if ( (param->fuse_type == 1) || (param->fuse_type == 3) ) {
+            o = ( o < 0.0f ) ? 0.0f : o;
+          }
+          *output_ptr2 = o;
+        }
+      }
+    }
+  }
+#endif
+}
+
+
 LIBXSMM_INLINE void naive_fusedbatchnorm_bp(naive_fusedbatchnorm_t* param, const float* input_ptr, float* doutput_ptr, float* dinput_add_ptr, float* del_beta_ptr,  float* del_gamma_ptr, const float* expectval_ptr, const float* rcpstddev_ptr)
 {
   const int nImg = param->N;
@@ -215,10 +297,10 @@ LIBXSMM_INLINE void naive_fusedbatchnorm_bp(naive_fusedbatchnorm_t* param, const
   const int ofh = ifh/sh;
   const int ofw = ifw/sw;
   int img, fm, hi, wi, ho, wo;
-  int iph = param->pad_h_in;
-  int ipw = param->pad_w_in;
-  int oph = param->pad_h_out;
-  int opw = param->pad_w_out;
+  int iph ;
+  int ipw ;
+  int oph ;
+  int opw ;
   int ifhp = ifh + 2*iph;
   int ifwp = ifw + 2*ipw;
   int ofhp = ofh + 2*oph;
@@ -855,6 +937,7 @@ int main(int argc, char* argv[])
     libxsmm_bn_handle_post = libxsmm_dnn_create_fusedbatchnorm( fusedbatchnorm_desc_post, &status );
     CHKERR_LIBXSMM_DNN( status );
     conv_desc.post_bn = libxsmm_bn_handle_post;
+#if defined(USE_FUSED_BATCHNORM)
     fusedbatchnorm_desc_pre.N = nImg;
     fusedbatchnorm_desc_pre.C = nIfm;
     fusedbatchnorm_desc_pre.H = ifh*stride_bn;
@@ -874,6 +957,7 @@ int main(int argc, char* argv[])
     libxsmm_bn_handle_pre = libxsmm_dnn_create_fusedbatchnorm( fusedbatchnorm_desc_pre, &status );
     CHKERR_LIBXSMM_DNN( status );
     conv_desc.pre_bn = libxsmm_bn_handle_pre;
+#endif
 #endif
     libxsmm_handle = libxsmm_dnn_create_conv_layer( conv_desc, &status );
     CHKERR_LIBXSMM_DNN( status );
@@ -1028,38 +1112,22 @@ int main(int argc, char* argv[])
 #if defined(USE_FUSED_BATCH_STATS)
       {
         float *expectval_naive, *rcpstddev_naive, *variance_naive;
-        int img_i = 0, ch_i = 0, ch_j = 0, pxl_i = 0;
-        LIBXSMM_VLA_DECL(3, float, out_naive, naive_output,       nOfm, ofhp*ofwp);
-        float recp_nhw = 1.0f/(nImg * ofh * ofw);
-        float meansq, sqbmean;
-        const float sqrt_eps = 1e-7f;
-
         expectval_naive = (float*) malloc(nOfm*sizeof(float));
         rcpstddev_naive    = (float*) malloc(nOfm*sizeof(float));
         variance_naive  = (float*) malloc(nOfm*sizeof(float));
 
-        for ( ch_i = 0; ch_i < nOfm; ++ch_i ) {
-          expectval_naive[ch_i] = 0.0f;
-          rcpstddev_naive[ch_i] = 0.0f;
-        }
+        /* set struct for naive convolution */
+        naive_fusedbatchnorm_t naive_param;
+        naive_param.N = nImg;
+        naive_param.C = nOfm;
+        naive_param.H = ofh;
+        naive_param.W = ofw;
+        naive_param.stride_h = stride_h;
+        naive_param.stride_w = stride_w;
+        naive_param.norm_type = 0;
+        naive_param.fuse_type = 0;
 
-        for ( img_i = 0; img_i < nImg; ++img_i ) {
-          for ( ch_i = 0; ch_i < nOfm; ++ch_i ) {
-            for ( pxl_i = 0; pxl_i < ofhp*ofwp; ++pxl_i ) {
-              const float f = LIBXSMM_VLA_ACCESS(3, out_naive, img_i, ch_i, pxl_i, nOfm, ofhp*ofwp);
-              rcpstddev_naive[ch_i] += f * f;
-              expectval_naive[ch_i]  += f;
-            }
-          }
-        }
-
-        for ( ch_i = 0; ch_i < nOfm; ++ch_i ) {
-          expectval_naive[ch_i] = expectval_naive[ch_i] * recp_nhw;
-          meansq = expectval_naive[ch_i] * expectval_naive[ch_i];
-          sqbmean = recp_nhw * rcpstddev_naive[ch_i];
-          variance_naive[ch_i] = sqbmean - meansq;
-          rcpstddev_naive[ch_i] = (float) (1.0/sqrt((double)variance_naive[ch_i] + sqrt_eps));
-        }
+        naive_fusedbatchnorm_fp(&naive_param, naive_output, NULL, NULL,  NULL, NULL, expectval_naive, rcpstddev_naive, variance_naive);
 
         libxsmm_matdiff(LIBXSMM_DATATYPE_F32, nOfm, 1, expectval_naive, expectval_libxsmm, 0, 0, &norms_batchstats);
         printf("Expected values:\n");
@@ -1084,7 +1152,7 @@ int main(int argc, char* argv[])
         libxsmm_matdiff_reduce(&diff, &norms_batchstats);
 
         libxsmm_matdiff(LIBXSMM_DATATYPE_F32, nOfm, 1, variance_naive, variance_libxsmm, 0, 0, &norms_batchstats);
-        printf("rcpstddev values:\n");
+        printf("Variance values:\n");
         printf("L1 reference  : %.25g\n", norms_batchstats.l1_ref);
         printf("L1 test       : %.25g\n", norms_batchstats.l1_tst);
         printf("L2 abs.error  : %.24f\n", norms_batchstats.l2_abs);
@@ -1151,10 +1219,6 @@ int main(int argc, char* argv[])
         naive_param.W = ifw*stride_bn;
         naive_param.stride_h = stride_bn;
         naive_param.stride_w = stride_bn;
-        naive_param.pad_h_in = fusedbatchnorm_desc_pre.pad_h_in;
-        naive_param.pad_w_in = fusedbatchnorm_desc_pre.pad_w_in;
-        naive_param.pad_h_out = fusedbatchnorm_desc_pre.pad_h_out;
-        naive_param.pad_w_out = fusedbatchnorm_desc_pre.pad_w_out;
 
         naive_fusedbatchnorm_bp(&naive_param, naive_bn_input, naive_input, naive_del_input_add, naive_dbeta, naive_dgamma, naive_bmean, naive_rcpstddev);
 
@@ -1361,9 +1425,14 @@ int main(int argc, char* argv[])
 
   /* deallocate data */
   libxsmm_free(naive_input);
+  libxsmm_free(naive_dinput);
   libxsmm_free(naive_output);
+  libxsmm_free(naive_doutput);
   libxsmm_free(naive_libxsmm_output);
+  libxsmm_free(naive_libxsmm_dinput);
+  libxsmm_free(naive_libxsmm_dfilter);
   libxsmm_free(naive_filter);
+  libxsmm_free(naive_dfilter);
   libxsmm_free(input_libxsmm);
   libxsmm_free(filter_libxsmm);
   libxsmm_free(output_libxsmm);
