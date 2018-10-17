@@ -1013,18 +1013,6 @@ LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_setup_bwd( libxsmm_dnn_layer* h
         handle->compute_max_in_kernel_bwd = 0;
       }
 
-      if ( (handle->fuse_batchstats_bwd == 1) && (handle->use_nts_bwd == 1) && (handle->use_fwd_for_bwd == 1)) {
-        fwd_equivalent_descriptor.compute_batch_stats_bwd = 1;
-        fwd_equivalent_descriptor.compute_batch_stats_fwd = 0;
-        fwd_equivalent_descriptor.pre_bn = &(handle->pre_bn->desc);
-        handle->compute_batch_stats_in_kernel_bwd = 1;
-      } else {
-        fwd_equivalent_descriptor.compute_batch_stats_fwd = 0;
-        fwd_equivalent_descriptor.compute_batch_stats_bwd = 0;
-        handle->compute_batch_stats_in_kernel_bwd = 0;
-      }
-
-      fwd_equivalent_descriptor.perform_relu_in_kernel = (((handle->fuse_relu_bwd > 0) && (handle->use_nts_bwd == 1)) || handle->compute_batch_stats_in_kernel_bwd) ? 1 : 0;
       if (handle->padding_flag == 1) {
         matcopy_descriptor.n = handle->ofhp;
         matcopy_descriptor.m = handle->ofwp * handle->ofmblock;
@@ -1049,6 +1037,19 @@ LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_setup_bwd( libxsmm_dnn_layer* h
             matcopy_descriptor.n = 1;
             handle->matcopy_bwd[2].xmatcopy = libxsmm_dispatch_mcopy(&matcopy_descriptor);
           }
+
+          if ((handle->fuse_batchstats_bwd == 1) && (handle->use_nts_bwd == 1)) {
+            fwd_equivalent_descriptor.compute_batch_stats_bwd = 1;
+            fwd_equivalent_descriptor.compute_batch_stats_fwd = 0;
+            fwd_equivalent_descriptor.pre_bn = &(handle->pre_bn->desc);
+            handle->compute_batch_stats_in_kernel_bwd = 1;
+          } else {
+            fwd_equivalent_descriptor.compute_batch_stats_fwd = 0;
+            fwd_equivalent_descriptor.compute_batch_stats_bwd = 0;
+            handle->compute_batch_stats_in_kernel_bwd = 0;
+          }
+
+          fwd_equivalent_descriptor.perform_relu_in_kernel =  (((handle->fuse_relu_bwd > 0) && (handle->use_nts_bwd == 1)) || handle->compute_batch_stats_in_kernel_bwd) ? 1 : 0;
           fwd_equivalent_descriptor.n_variants = handle->n_variants;
           fwd_equivalent_descriptor.prefetch = LIBXSMM_CONVOLUTION_PREFETCH_ALL;
           if ( handle->n_variants == 1) {
@@ -1137,8 +1138,8 @@ LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_setup_bwd( libxsmm_dnn_layer* h
       mirror_handle.fwd_code_segments = handle->bwd_code_segments;
       mirror_handle.ofh_fwd_start = handle->ofh_bwd_start;
       mirror_handle.ofh_fwd_end = handle->ofh_bwd_end;
-      mirror_handle.perform_relu_in_kernel = ((handle->fuse_relu_bwd > 0) && (handle->use_nts_bwd == 1)) ? 1 : 0;
-      handle->perform_relu_in_kernel = ((handle->fuse_relu_bwd > 0) && (handle->use_nts_bwd == 1)) ? 1 : 0;
+      mirror_handle.perform_relu_in_kernel =  (((handle->fuse_relu_bwd > 0) && (handle->use_nts_bwd == 1)) || handle->compute_batch_stats_in_kernel_bwd) ? 1 : 0;
+      handle->perform_relu_in_kernel = (((handle->fuse_relu_bwd > 0) && (handle->use_nts_bwd == 1)) || handle->compute_batch_stats_in_kernel_bwd) ? 1 : 0;
 
       tune_fwd_blockings(&mirror_handle);
       status = libxsmm_dnn_perform_fwd_dryrun_direct(&mirror_handle);
