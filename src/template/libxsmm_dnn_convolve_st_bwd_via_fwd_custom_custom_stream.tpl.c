@@ -257,7 +257,7 @@ del_in = ((element_input_type*)handle->grad_input->data) + (handle->desc.pad_h_i
   }
   pool_index = 0;
   i = 0;
-  bn_outstats_stream = handle->bn_stats_indices_ptrs[ltid];
+  bn_outstats_stream = handle->bn_stats_indices_ptrs_bwd[ltid];
   bn_instats_stream = handle->bn_aux_stats_indices_ptrs[ltid];
   bn_input_stream = handle->bn_aux_input_indices_ptrs[ltid];
 

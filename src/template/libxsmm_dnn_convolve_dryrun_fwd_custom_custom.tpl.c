@@ -261,7 +261,11 @@ for (ltid = 0; ltid < handle->desc.threads; ltid++)
   /* BN offsets...  */
   if  (record_bnstats_offset && 0 != local_entries) {
     bn_indices = (int*) libxsmm_aligned_malloc( (local_entries/3) * sizeof(int), 64);
-    handle->bn_stats_indices_ptrs[ltid] = bn_indices;
+    if (handle->use_fwd_for_bwd == 0){
+      handle->bn_stats_indices_ptrs_fwd[ltid] = bn_indices;
+    } else {
+      handle->bn_stats_indices_ptrs_bwd[ltid] = bn_indices;
+    }
   }
   if  (record_aux_stats_offset && 0 != local_entries) {
     aux_stat_indices = (int*) libxsmm_aligned_malloc( (local_entries/3) * sizeof(int), 64);

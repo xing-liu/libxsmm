@@ -1648,7 +1648,7 @@ LIBXSMM_API_INTERN void libxsmm_generator_convolution_forward_store_output(
   }
 
   /* Do the bwd BN stuff here  */
-  if ( i_conv_desc->compute_batch_stats_bwd) {
+  if ( i_conv_desc->compute_batch_stats_bwd &&  i_conv_desc->use_fwd_generator_for_bwd) {
     int ifwp_bn = i_conv_desc->pre_bn->W + 2 * i_conv_desc->pre_bn->pad_w_in;
     int sw_bn = i_conv_desc->pre_bn->v;
     int sh_bn = i_conv_desc->pre_bn->u;

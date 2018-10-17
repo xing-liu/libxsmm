@@ -58,7 +58,7 @@ int instr, n_segments, offset_bn, offset_i, offset_o, offset_w, pi, po, pw, pc, 
 /* Stream related variables  */
 segment_t *code_stream;
 int *stream = handle->compute_fwd_indices_ptrs[ltid];
-int *bn_stream = handle->bn_stats_indices_ptrs[ltid];
+int *bn_stream = handle->bn_stats_indices_ptrs_fwd[ltid];
 
 /* Batch stats related variables */
 int nImg = 0, work = 0, chunksize = 0, thr_begin = 0, thr_end = 0, fm = 0, nBlocksFm = 0, imgfm = 0, hi = 0, ho = 0, wi = 0, wo = 0;

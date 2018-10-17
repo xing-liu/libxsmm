@@ -733,7 +733,8 @@ LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_setup_fwd( libxsmm_dnn_layer* h
     /* allocate buffers */
     handle->n_entries_fwd = (int*) malloc(handle->desc.threads * sizeof(int));
     handle->compute_fwd_indices_ptrs = (int**)malloc(handle->desc.threads * sizeof(int*));
-    handle->bn_stats_indices_ptrs = (int**)malloc(handle->desc.threads * sizeof(int*));
+    handle->bn_stats_indices_ptrs_fwd = (int**)malloc(handle->desc.threads * sizeof(int*));
+    handle->bn_stats_indices_ptrs_bwd = (int**)malloc(handle->desc.threads * sizeof(int*));
     handle->bn_aux_stats_indices_ptrs = (int**)malloc(handle->desc.threads * sizeof(int*));
     handle->bn_aux_input_indices_ptrs = (int**)malloc(handle->desc.threads * sizeof(int*));
     handle->kernel_fwd_variant_ptrs = (char**)malloc(handle->desc.threads * sizeof(char*));
@@ -744,13 +745,14 @@ LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_setup_fwd( libxsmm_dnn_layer* h
 
     /* TODO: proper error handling */
     LIBXSMM_ASSERT(NULL != handle->n_entries_fwd && NULL != handle->compute_fwd_indices_ptrs);
-    LIBXSMM_ASSERT(NULL != handle->bn_stats_indices_ptrs && NULL != handle->bn_aux_stats_indices_ptrs && NULL != handle->bn_aux_input_indices_ptrs && NULL != handle->kernel_fwd_variant_ptrs);
+    LIBXSMM_ASSERT(NULL != handle->bn_stats_indices_ptrs_fwd && NULL != handle->bn_stats_indices_ptrs_bwd && NULL != handle->bn_aux_stats_indices_ptrs && NULL != handle->bn_aux_input_indices_ptrs && NULL != handle->kernel_fwd_variant_ptrs);
   LIBXSMM_ASSERT(NULL != handle->n_fwd_code_segments && NULL != handle->fwd_code_segments);
     LIBXSMM_ASSERT(NULL != handle->ofh_fwd_start && NULL != handle->ofh_fwd_end);
 
     memset( handle->n_entries_fwd, 0, handle->desc.threads * sizeof(int) );
     memset( handle->compute_fwd_indices_ptrs, 0, handle->desc.threads * sizeof(int*));
-    memset( handle->bn_stats_indices_ptrs, 0, handle->desc.threads * sizeof(int*));
+    memset( handle->bn_stats_indices_ptrs_fwd, 0, handle->desc.threads * sizeof(int*));
+    memset( handle->bn_stats_indices_ptrs_bwd, 0, handle->desc.threads * sizeof(int*));
     memset( handle->bn_aux_stats_indices_ptrs, 0, handle->desc.threads * sizeof(int*));
     memset( handle->bn_aux_input_indices_ptrs, 0, handle->desc.threads * sizeof(int*));
     memset( handle->kernel_fwd_variant_ptrs, 0, handle->desc.threads * sizeof(char*) );
@@ -1011,7 +1013,7 @@ LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_setup_bwd( libxsmm_dnn_layer* h
         handle->compute_max_in_kernel_bwd = 0;
       }
 
-      if ( (handle->fuse_batchstats_bwd == 1) && (handle->use_nts_bwd == 1) ) {
+      if ( (handle->fuse_batchstats_bwd == 1) && (handle->use_nts_bwd == 1) && (handle->use_fwd_for_bwd == 1)) {
         fwd_equivalent_descriptor.compute_batch_stats_bwd = 1;
         fwd_equivalent_descriptor.compute_batch_stats_fwd = 0;
         fwd_equivalent_descriptor.pre_bn = &(handle->pre_bn->desc);

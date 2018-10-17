@@ -1313,7 +1313,8 @@ LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_internal_free_structs_code_conv
       if ( handle->algo == LIBXSMM_DNN_CONV_ALGO_DIRECT ) {
         for (loop = 0; loop < handle->desc.threads; loop++) {
           libxsmm_free( handle->compute_fwd_indices_ptrs[loop] );
-          libxsmm_free( handle->bn_stats_indices_ptrs[loop] );
+          libxsmm_free( handle->bn_stats_indices_ptrs_fwd[loop] );
+          libxsmm_free( handle->bn_stats_indices_ptrs_bwd[loop] );
           libxsmm_free( handle->kernel_fwd_variant_ptrs[loop] );
           libxsmm_free( handle->fwd_code_segments[loop] );
         }
@@ -1321,7 +1322,8 @@ LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_internal_free_structs_code_conv
 
       free( handle->n_entries_fwd );
       free( handle->compute_fwd_indices_ptrs );
-      free( handle->bn_stats_indices_ptrs );
+      free( handle->bn_stats_indices_ptrs_fwd );
+      free( handle->bn_stats_indices_ptrs_bwd );
       free( handle->kernel_fwd_variant_ptrs );
       free( handle->n_fwd_code_segments );
       free( handle->fwd_code_segments );

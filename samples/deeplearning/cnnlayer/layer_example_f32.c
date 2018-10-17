@@ -937,7 +937,6 @@ int main(int argc, char* argv[])
     libxsmm_bn_handle_post = libxsmm_dnn_create_fusedbatchnorm( fusedbatchnorm_desc_post, &status );
     CHKERR_LIBXSMM_DNN( status );
     conv_desc.post_bn = libxsmm_bn_handle_post;
-#if defined(USE_FUSED_BATCHNORM)
     fusedbatchnorm_desc_pre.N = nImg;
     fusedbatchnorm_desc_pre.C = nIfm;
     fusedbatchnorm_desc_pre.H = ifh*stride_bn;
@@ -957,7 +956,6 @@ int main(int argc, char* argv[])
     libxsmm_bn_handle_pre = libxsmm_dnn_create_fusedbatchnorm( fusedbatchnorm_desc_pre, &status );
     CHKERR_LIBXSMM_DNN( status );
     conv_desc.pre_bn = libxsmm_bn_handle_pre;
-#endif
 #endif
     libxsmm_handle = libxsmm_dnn_create_conv_layer( conv_desc, &status );
     CHKERR_LIBXSMM_DNN( status );
