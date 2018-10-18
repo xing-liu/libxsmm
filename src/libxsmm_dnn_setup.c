@@ -363,6 +363,11 @@ LIBXSMM_API_INTERN void libxsmm_dnn_setup_scratch( libxsmm_dnn_layer* handle ) {
     handle->scratch7_size = 0;
   }
 
+  if ( handle->fuse_bn_apply_fwd == 1 || handle->fuse_bn_apply_bwd == 1 ) {
+    handle->scratch8 = 0;
+    handle->scratch8_size = (size_t)  LIBXSMM_MAX(handle->ifwp*handle->ifhp*handle->desc.C, handle->ofwp*handle->ofhp*handle->desc.K) * handle->desc.N * sizeof(float);
+  }
+
 }
 
 LIBXSMM_API_INTERN libxsmm_dnn_err_t libxsmm_dnn_setup_generic( libxsmm_dnn_layer* handle ) {
