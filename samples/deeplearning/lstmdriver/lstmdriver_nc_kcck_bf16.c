@@ -1008,7 +1008,8 @@ int main(int argc, char* argv[])
   float *icfogoldt, *wgold, *rgold;
   libxsmm_bfloat16 *xt, *csp, *hp, *w, *wt, *r, *rt, *b, *cst, *ht, *w_tmp, *r_tmp;
   libxsmm_bfloat16 *it, *ft, *ot, *cit, *cot;
-  libxsmm_bfloat16 *dxt, *dcsp, *dhp, *dw, *dr, *db, *dcs, *dht;
+  libxsmm_bfloat16 *dxt, *dcsp, *dhp, *dcs, *dht;
+  float *dw, *dr, *db;
   float forget_bias = 1.0f;
   float *h_test, *dxt_test, *dw_test, *dr_test, *db_test;
 
@@ -1178,9 +1179,9 @@ int main(int argc, char* argv[])
   dxt       = (libxsmm_bfloat16*)libxsmm_aligned_malloc(N*C*t*sizeof(libxsmm_bfloat16), 2097152);
   dcsp      = (libxsmm_bfloat16*)libxsmm_aligned_malloc(K*N*sizeof(libxsmm_bfloat16), 2097152);
   dhp       = (libxsmm_bfloat16*)libxsmm_aligned_malloc(K*N*sizeof(libxsmm_bfloat16), 2097152);
-  dw        = (libxsmm_bfloat16*)libxsmm_aligned_malloc(C*K*4*sizeof(libxsmm_bfloat16), 2097152);
-  dr        = (libxsmm_bfloat16*)libxsmm_aligned_malloc(K*K*4*sizeof(libxsmm_bfloat16), 2097152);
-  db        = (libxsmm_bfloat16*)libxsmm_aligned_malloc(K*4*sizeof(libxsmm_bfloat16), 2097152);
+  dw        = (float*)libxsmm_aligned_malloc(C*K*4*sizeof(float), 2097152);
+  dr        = (float*)libxsmm_aligned_malloc(K*K*4*sizeof(float), 2097152);
+  db        = (float*)libxsmm_aligned_malloc(K*4*sizeof(float), 2097152);
   dcs       = (libxsmm_bfloat16*)libxsmm_aligned_malloc(K*N*sizeof(libxsmm_bfloat16), 2097152);
   dht       = (libxsmm_bfloat16*)libxsmm_aligned_malloc(K*N*t*sizeof(libxsmm_bfloat16), 2097152);
   h_test    = (float*)libxsmm_aligned_malloc(K*N*t*sizeof(float), 2097152);
@@ -1249,9 +1250,9 @@ int main(int argc, char* argv[])
   zero_buf_bfp16(dxt,  N*C*t);
   zero_buf_bfp16(dcsp, K*N);
   zero_buf_bfp16(dhp,  K*N);
-  zero_buf_bfp16(dw,   C*K*4);
-  zero_buf_bfp16(dr,   K*K*4);
-  zero_buf_bfp16(db,   K*4);
+  zero_buf_f32(dw,   C*K*4);
+  zero_buf_f32(dr,   K*K*4);
+  zero_buf_f32(db,   K*4);
   zero_buf_bfp16(dcs,  K*N);
   zero_buf_bfp16(dht,  K*N*t);
 
@@ -1645,14 +1646,15 @@ int main(int argc, char* argv[])
         CHKERR_LIBXSMM_DNN( libxsmm_dnn_rnncell_execute_st( libxsmm_handle, LIBXSMM_DNN_COMPUTE_KIND_UPD, 0, tid ) );
       }
 
+#if 0
       /* Copy out dw matrices from KCCK bf16 format to CK bf16 format */
       matrix_copy_KCCK_to_CK_bf16(dw, w_tmp, C, 4*K, bc, bk);
 
       /* Upconvert libxsmm bf16 buffer to fp32 for correctness check */
       matrix_copy_bfp16_f32(4*C*K, w_tmp, dw_test);
-
+#endif
       /* compare */
-      libxsmm_matdiff(&norms_upd_w, LIBXSMM_DATATYPE_F32, C*K*4, 1, dwgold, dw_test, 0, 0);
+      libxsmm_matdiff(&norms_upd_w, LIBXSMM_DATATYPE_F32, C*K*4, 1, dwgold, dw, 0, 0);
       printf("Delta weight\n");
       printf("L1 reference  : %.25g\n", norms_upd_w.l1_ref);
       printf("L1 test       : %.25g\n", norms_upd_w.l1_tst);
@@ -1663,17 +1665,17 @@ int main(int argc, char* argv[])
       printf("Check-norm    : %.24f\n", norms_upd_w.normf_rel);
       libxsmm_matdiff_reduce(&diff, &norms_upd_w);
 
-
+#if 0
       /* Copy out dr matrices from KCCK bf16 format to CK bf16 format */
       matrix_copy_KCCK_to_CK_bf16(dr, r_tmp, K, 4*K, bk, bk);
 
       /* Upconvert libxsmm bf16 buffer to fp32 for correctness check */
       matrix_copy_bfp16_f32(4*K*K, r_tmp, dr_test);
-
+#endif
 #if defined(TWO_GEMMS)
-      libxsmm_matdiff(&norms_upd_r, LIBXSMM_DATATYPE_F32, K*K*4, 1, drgold, dr_test, 0, 0);
+      libxsmm_matdiff(&norms_upd_r, LIBXSMM_DATATYPE_F32, K*K*4, 1, drgold, dr, 0, 0);
 #else
-      libxsmm_matdiff(&norms_upd_r, LIBXSMM_DATATYPE_F32, K*K*4, 1, &(dwgold[C*K*4]), dr_test, 0, 0);
+      libxsmm_matdiff(&norms_upd_r, LIBXSMM_DATATYPE_F32, K*K*4, 1, &(dwgold[C*K*4]), dr, 0, 0);
 #endif
       printf("Delta recurrent weight\n");
       printf("L1 reference  : %.25g\n", norms_upd_r.l1_ref);
@@ -1686,9 +1688,9 @@ int main(int argc, char* argv[])
       libxsmm_matdiff_reduce(&diff, &norms_upd_r);
 
       /* Upconvert libxsmm bf16 buffer to fp32 for correctness check */
-      matrix_copy_bfp16_f32(4*K, db, db_test);
+      /*matrix_copy_bfp16_f32(4*K, db, db_test);*/
 
-      libxsmm_matdiff(&norms_upd_b, LIBXSMM_DATATYPE_F32, K*4, 1, dbgold, db_test, 0, 0);
+      libxsmm_matdiff(&norms_upd_b, LIBXSMM_DATATYPE_F32, K*4, 1, dbgold, db, 0, 0);
       printf("Delta bias\n");
       printf("L1 reference  : %.25g\n", norms_upd_b.l1_ref);
       printf("L1 test       : %.25g\n", norms_upd_b.l1_tst);
@@ -1731,13 +1733,13 @@ int main(int argc, char* argv[])
       printf("Linf rel.error: %.24f\n", norms_bwd.linf_rel);
       printf("Check-norm    : %.24f\n", norms_bwd.normf_rel);
       libxsmm_matdiff_reduce(&diff, &norms_bwd);
-
+#if 0
       /* Copy out dw matrices from KCCK bf16 format to CK bf16 format */
       matrix_copy_KCCK_to_CK_bf16(dw, w_tmp, C, 4*K, bc, bk);
       /* Upconvert libxsmm bf16 buffer to fp32 for correctness check */
       matrix_copy_bfp16_f32(4*C*K, w_tmp, dw_test);
-
-      libxsmm_matdiff(&norms_upd_w, LIBXSMM_DATATYPE_F32, C*K*4, 1, dwgold, dw_test, 0, 0);
+#endif
+      libxsmm_matdiff(&norms_upd_w, LIBXSMM_DATATYPE_F32, C*K*4, 1, dwgold, dw, 0, 0);
       printf("Delta weight\n");
       printf("L1 reference  : %.25g\n", norms_upd_w.l1_ref);
       printf("L1 test       : %.25g\n", norms_upd_w.l1_tst);
@@ -1748,17 +1750,17 @@ int main(int argc, char* argv[])
       printf("Check-norm    : %.24f\n", norms_upd_w.normf_rel);
       libxsmm_matdiff_reduce(&diff, &norms_upd_w);
 
-
+#if 0
       /* Copy out dr matrices from KCCK bf16 format to CK bf16 format */
       matrix_copy_KCCK_to_CK_bf16(dr, r_tmp, K, 4*K, bk, bk);
 
       /* Upconvert libxsmm bf16 buffer to fp32 for correctness check */
       matrix_copy_bfp16_f32(4*K*K, r_tmp, dr_test);
-
+#endif
 #if defined(TWO_GEMMS)
-      libxsmm_matdiff(&norms_upd_r, LIBXSMM_DATATYPE_F32, K*K*4, 1, drgold, dr_test, 0, 0);
+      libxsmm_matdiff(&norms_upd_r, LIBXSMM_DATATYPE_F32, K*K*4, 1, drgold, dr, 0, 0);
 #else
-      libxsmm_matdiff(&norms_upd_r, LIBXSMM_DATATYPE_F32, K*K*4, 1, &(dwgold[C*K*4]), dr_test, 0, 0);
+      libxsmm_matdiff(&norms_upd_r, LIBXSMM_DATATYPE_F32, K*K*4, 1, &(dwgold[C*K*4]), dr, 0, 0);
 #endif
       printf("Delta recurrent weight\n");
       printf("L1 reference  : %.25g\n", norms_upd_r.l1_ref);
@@ -1771,9 +1773,9 @@ int main(int argc, char* argv[])
       libxsmm_matdiff_reduce(&diff, &norms_upd_r);
 
       /* Upconvert libxsmm bf16 buffer to fp32 for correctness check */
-      matrix_copy_bfp16_f32(4*K, db, db_test);
+      /*matrix_copy_bfp16_f32(4*K, db, db_test);*/
 
-      libxsmm_matdiff(&norms_upd_b, LIBXSMM_DATATYPE_F32, K*4, 1, dbgold, db_test, 0, 0);
+      libxsmm_matdiff(&norms_upd_b, LIBXSMM_DATATYPE_F32, K*4, 1, dbgold, db, 0, 0);
       printf("Delta bias\n");
       printf("L1 reference  : %.25g\n", norms_upd_b.l1_ref);
       printf("L1 test       : %.25g\n", norms_upd_b.l1_tst);

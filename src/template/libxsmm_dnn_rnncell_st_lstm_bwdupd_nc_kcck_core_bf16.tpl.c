@@ -385,10 +385,17 @@ for (j = t-1; j >= 0; --j) {
         _mm512_store_ps(&dbc[ik], dbc_sum);
         /* Downconvert delta bias to bf16 if done with all timesteps */
         if (j == 0) {
+#if 0
           _mm512_storecvt_fp32_bf16(&dbi_bf16[ik], dbi_sum);
           _mm512_storecvt_fp32_bf16(&dbf_bf16[ik], dbf_sum);
           _mm512_storecvt_fp32_bf16(&dbo_bf16[ik], dbo_sum);
           _mm512_storecvt_fp32_bf16(&dbc_bf16[ik], dbc_sum);
+#else
+          _mm512_store_ps(&dbi_bf16[ik], dbi_sum);
+          _mm512_store_ps(&dbf_bf16[ik], dbf_sum);
+          _mm512_store_ps(&dbo_bf16[ik], dbo_sum);
+          _mm512_store_ps(&dbc_bf16[ik], dbc_sum);
+#endif
         }
       }
     } else {
