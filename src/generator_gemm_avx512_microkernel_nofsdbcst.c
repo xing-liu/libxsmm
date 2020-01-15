@@ -443,13 +443,14 @@ void libxsmm_generator_gemm_avx512_microkernel_nofsdbcst( libxsmm_generated_code
         if (i_xgemm_desc->lda == 1024) {
           pf_a_cols_ahead = 4;
         }
+#if 0
         libxsmm_x86_instruction_prefetch( io_generated_code,
             LIBXSMM_X86_INSTR_PREFETCHT0,
             i_gp_reg_mapping->gp_reg_a,
             LIBXSMM_X86_GP_REG_UNDEF, 0,
             (i_micro_kernel_config->datatype_size) * (i_micro_kernel_config->vector_length) * l_n + pf_a_cols_ahead * i_xgemm_desc->lda * i_micro_kernel_config->datatype_size);
+#endif
       }
-
       for ( l_m = 0; l_m < l_m_blocking; l_m++ ) {
         /* post increment early */
         if ( (l_m == 0) && (l_n == i_n_blocking-1) ) {
