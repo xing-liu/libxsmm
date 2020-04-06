@@ -12,8 +12,8 @@
       MODULE LIBXSMM
         USE, INTRINSIC :: ISO_C_BINDING, ONLY:                          &
      &    C_DOUBLE, C_FLOAT, C_DOUBLE_COMPLEX, C_FLOAT_COMPLEX,         &
-     &    C_LONG_LONG, C_INT, C_SHORT, C_CHAR, C_INT8_T,                &
-     &    C_F_POINTER, C_ASSOCIATED, C_LOC, C_PTR, C_NULL_PTR,          &
+     &    C_LONG_LONG, C_INT, C_SHORT, C_CHAR, C_INT8_T, C_BOOL,        &
+     &    C_F_POINTER, C_ASSOCIATED, C_LOC, C_PTR,                      &
      &    C_FUNPTR, C_NULL_FUNPTR
         IMPLICIT NONE
 
@@ -192,154 +192,6 @@
           INTEGER(LIBXSMM_BLASINT_KIND) n
         END TYPE
 
-        INTERFACE libxsmm_ptr0
-          MODULE PROCEDURE libxsmm_ptr_z0, libxsmm_ptr_c0
-          MODULE PROCEDURE libxsmm_ptr_d0, libxsmm_ptr_s0
-          MODULE PROCEDURE libxsmm_ptr_i0, libxsmm_ptr_w0
-          MODULE PROCEDURE libxsmm_ptr_j0 !! Byte/char
-          MODULE PROCEDURE libxsmm_ptr_b0 !! Byte/char
-          MODULE PROCEDURE libxsmm_ptr_l0 !! long long
-        END INTERFACE
-
-        INTERFACE libxsmm_ptr1
-          MODULE PROCEDURE libxsmm_ptr_z1, libxsmm_ptr_c1
-          MODULE PROCEDURE libxsmm_ptr_d1, libxsmm_ptr_s1
-          MODULE PROCEDURE libxsmm_ptr_i1, libxsmm_ptr_w1
-          MODULE PROCEDURE libxsmm_ptr_j1 !! Byte/char
-          MODULE PROCEDURE libxsmm_ptr_b1 !! Byte/char
-          MODULE PROCEDURE libxsmm_ptr_l1 !! long long
-        END INTERFACE
-
-        INTERFACE libxsmm_ptr2
-          MODULE PROCEDURE libxsmm_ptr_z2, libxsmm_ptr_c2
-          MODULE PROCEDURE libxsmm_ptr_d2, libxsmm_ptr_s2
-          MODULE PROCEDURE libxsmm_ptr_i2, libxsmm_ptr_w2
-          MODULE PROCEDURE libxsmm_ptr_j2 !! Byte/char
-          MODULE PROCEDURE libxsmm_ptr_b2 !! Byte/char
-          MODULE PROCEDURE libxsmm_ptr_l2 !! long long
-        END INTERFACE
-
-        !> Deallocates JIT'ted code, or unregisters/releases code from registry.
-        INTERFACE libxsmm_release_mmkernel
-          MODULE PROCEDURE libxsmm_release_dmmkernel
-          MODULE PROCEDURE libxsmm_release_smmkernel
-          MODULE PROCEDURE libxsmm_release_wimmkernel
-        END INTERFACE
-
-        !> Construct JIT-code depending on given argument set.
-        INTERFACE libxsmm_mmdispatch
-          MODULE PROCEDURE libxsmm_dmmdispatch, libxsmm_smmdispatch
-          MODULE PROCEDURE libxsmm_wimmdispatch
-        END INTERFACE
-
-        !> Construct JIT-code depending on given argument set.
-        INTERFACE libxsmm_dispatch
-          MODULE PROCEDURE libxsmm_dmmdispatch, libxsmm_smmdispatch
-          MODULE PROCEDURE libxsmm_wimmdispatch
-        END INTERFACE
-
-        !> Check if a function is available (LIBXSMM_?MMFUNCTION).
-        INTERFACE libxsmm_mmavailable
-          MODULE PROCEDURE libxsmm_dmmavailable, libxsmm_smmavailable
-          MODULE PROCEDURE libxsmm_wimmavailable
-        END INTERFACE
-
-        !> Check if a function is available (LIBXSMM_?MMFUNCTION).
-        INTERFACE libxsmm_available
-          MODULE PROCEDURE libxsmm_smmavailable, libxsmm_dmmavailable
-          MODULE PROCEDURE libxsmm_wimmavailable
-        END INTERFACE
-
-        !> Call a specialized function.
-        INTERFACE libxsmm_mmcall
-          MODULE PROCEDURE libxsmm_dmmcall_abc, libxsmm_dmmcall_prf
-          MODULE PROCEDURE libxsmm_smmcall_abc, libxsmm_smmcall_prf
-        END INTERFACE
-
-        !> Overloaded GEMM routines (double precision).
-        INTERFACE libxsmm_dgemm
-          MODULE PROCEDURE libxsmm_dgemm0
-          MODULE PROCEDURE libxsmm_dgemm1
-          MODULE PROCEDURE libxsmm_dgemm2
-          MODULE PROCEDURE libxsmm_dgemm3
-        END INTERFACE
-
-        !> Overloaded GEMM routines (single precision).
-        INTERFACE libxsmm_sgemm
-          MODULE PROCEDURE libxsmm_sgemm0
-          MODULE PROCEDURE libxsmm_sgemm1
-          MODULE PROCEDURE libxsmm_sgemm2
-        END INTERFACE
-
-        !> Overloaded GEMM routines (low precision).
-        INTERFACE libxsmm_wigemm
-          MODULE PROCEDURE libxsmm_wigemm0
-          MODULE PROCEDURE libxsmm_wigemm1
-          MODULE PROCEDURE libxsmm_wigemm2
-        END INTERFACE
-
-        !> Overloaded GEMM routines.
-        INTERFACE libxsmm_gemm
-          MODULE PROCEDURE libxsmm_dgemm0
-          MODULE PROCEDURE libxsmm_dgemm1
-          MODULE PROCEDURE libxsmm_dgemm2
-          MODULE PROCEDURE libxsmm_dgemm3
-          MODULE PROCEDURE libxsmm_sgemm0
-          MODULE PROCEDURE libxsmm_sgemm1
-          MODULE PROCEDURE libxsmm_sgemm2
-          MODULE PROCEDURE libxsmm_sgemm3
-          MODULE PROCEDURE libxsmm_wigemm0
-          MODULE PROCEDURE libxsmm_wigemm1
-          MODULE PROCEDURE libxsmm_wigemm2
-          MODULE PROCEDURE libxsmm_wigemm3
-        END INTERFACE
-
-        !> Overloaded BLAS GEMM routines (double precision).
-        INTERFACE libxsmm_blas_dgemm
-          MODULE PROCEDURE libxsmm_blas_dgemm0
-          MODULE PROCEDURE libxsmm_blas_dgemm1
-          MODULE PROCEDURE libxsmm_blas_dgemm2
-          MODULE PROCEDURE libxsmm_blas_dgemm3
-        END INTERFACE
-
-        !> Overloaded BLAS GEMM routines (single precision).
-        INTERFACE libxsmm_blas_sgemm
-          MODULE PROCEDURE libxsmm_blas_sgemm0
-          MODULE PROCEDURE libxsmm_blas_sgemm1
-          MODULE PROCEDURE libxsmm_blas_sgemm2
-          MODULE PROCEDURE libxsmm_blas_sgemm3
-        END INTERFACE
-
-        !> Overloaded BLAS GEMM routines (single/double precision).
-        INTERFACE libxsmm_blas_gemm
-          MODULE PROCEDURE libxsmm_blas_dgemm0
-          MODULE PROCEDURE libxsmm_blas_dgemm1
-          MODULE PROCEDURE libxsmm_blas_dgemm2
-          MODULE PROCEDURE libxsmm_blas_dgemm3
-          MODULE PROCEDURE libxsmm_blas_sgemm0
-          MODULE PROCEDURE libxsmm_blas_sgemm1
-          MODULE PROCEDURE libxsmm_blas_sgemm2
-          MODULE PROCEDURE libxsmm_blas_sgemm3
-        END INTERFACE
-
-        !> Calculate a hash value for a given key value (binary blob).
-        !> Conceptually pure, but C_LOC may be (incorrectly) impure.
-        INTERFACE libxsmm_hash
-          MODULE PROCEDURE libxsmm_hash_char
-          MODULE PROCEDURE libxsmm_hash_i8
-          MODULE PROCEDURE libxsmm_hash_i32
-          MODULE PROCEDURE libxsmm_hash_i64
-        END INTERFACE
-
-        !> Calculate whether there is a difference between two series of items.
-        !> Conceptually pure, but C_LOC may be (incorrectly) impure.
-        INTERFACE libxsmm_diff
-          MODULE PROCEDURE libxsmm_diff_char
-          MODULE PROCEDURE libxsmm_diff_i8
-          MODULE PROCEDURE libxsmm_diff_i32
-          MODULE PROCEDURE libxsmm_diff_i64
-        END INTERFACE
-
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_init, libxsmm_finalize
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_get_gemm_auto_prefetch
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_set_gemm_auto_prefetch
@@ -355,6 +207,8 @@
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xmmdispatch
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xmmcall_abc
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xmmcall_prf
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xclear
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xrelease
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_otrans_omp
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_dgemm_omp
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_sgemm_omp
@@ -365,6 +219,8 @@
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_gemm_batch_omp
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_timer_duration
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_timer_tick
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xhash
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xdiff
         INTERFACE
           !> Initialize the library; pay for setup cost at a specific point.
           SUBROUTINE libxsmm_init() BIND(C)
@@ -463,7 +319,7 @@
      &    BIND(C, NAME="libxsmm_xmmdispatch_")
             IMPORT :: C_FUNPTR, C_PTR, C_INT, LIBXSMM_BLASINT_KIND
             TYPE(C_FUNPTR), INTENT(OUT) :: kernel
-            INTEGER(C_INT), INTENT(IN) :: gemm_precision
+            INTEGER(C_INT), INTENT(IN)  :: gemm_precision
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m, n, k
             TYPE(C_PTR), INTENT(IN), VALUE :: lda, ldb, ldc
             TYPE(C_PTR), INTENT(IN), VALUE :: alpha, beta
@@ -481,7 +337,7 @@
      &    BIND(C, NAME="libxsmm_xmmdispatch2_")
             IMPORT :: C_FUNPTR, C_PTR, C_INT, LIBXSMM_BLASINT_KIND
             TYPE(C_FUNPTR), INTENT(OUT) :: kernel
-            INTEGER(C_INT), INTENT(IN) :: iprec, oprec
+            INTEGER(C_INT), INTENT(IN)  :: iprec, oprec
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m, n, k
             TYPE(C_PTR), INTENT(IN), VALUE :: lda, ldb, ldc
             TYPE(C_PTR), INTENT(IN), VALUE :: alpha, beta
@@ -490,9 +346,9 @@
 
           !> Generic call routine (3-argument form).
           !> Implicit FORTRAN 77 interface:
-          !> REAL(4|8)  :: a(1), b(1), c(1)
+          !> REAL(4|8)  :: a, b, c
           !> INTEGER(8) :: kernel
-          SUBROUTINE libxsmm_xmmcall_abc(kernel, a, b, c)               &
+          PURE SUBROUTINE libxsmm_xmmcall_abc(kernel, a, b, c)          &
      &    BIND(C, NAME="libxsmm_xmmcall_abc_")
             IMPORT C_FUNPTR, C_PTR
             TYPE(C_FUNPTR), INTENT(IN) :: kernel
@@ -501,13 +357,30 @@
 
           !> Generic call routine (6-argument form).
           !> Implicit FORTRAN 77 interface:
-          !> REAL(4|8)  :: a(1), b(1), c(1), pa(1), pb(1), pc(1)
+          !> REAL(4|8)  :: a, b, c, pa, pb, pc
           !> INTEGER(8) :: kernel
-          SUBROUTINE libxsmm_xmmcall_prf(kernel, a,b,c, pa,pb,pc)       &
+          PURE SUBROUTINE libxsmm_xmmcall_prf(kernel,                   &
+     &    a, b, c, pa, pb, pc)                                          &
      &    BIND(C, NAME="libxsmm_xmmcall_prf_")
             IMPORT C_FUNPTR, C_PTR
             TYPE(C_FUNPTR), INTENT(IN) :: kernel
             TYPE(C_PTR), INTENT(IN), VALUE :: a, b, c, pa, pb, pc
+          END SUBROUTINE
+
+          !> Fill destination with zeros; treats dst in raw/binary fashion.
+          SUBROUTINE libxsmm_xclear(dst, nbytes)                        &
+     &    BIND(C, NAME="libxsmm_xclear_")
+            IMPORT C_PTR, C_INT
+            TYPE(C_PTR), INTENT(IN), VALUE :: dst
+            INTEGER(C_INT), INTENT(IN) :: nbytes
+          END SUBROUTINE
+
+          !> Remove key-value pair from code registry and release memory.
+          SUBROUTINE libxsmm_xrelease(key, keysize)                     &
+     &    BIND(C, NAME="libxsmm_xrelease_")
+            IMPORT C_PTR, C_INT
+            TYPE(C_PTR), INTENT(IN), VALUE :: key
+            INTEGER(C_INT), INTENT(IN) :: keysize
           END SUBROUTINE
 
           !> Matrix transposition; MT via libxsmmext (out-of-place form).
@@ -516,7 +389,8 @@
           !> ANY ARRAY    :: output, input
           !> INTEGER(4)   :: typesize
           PURE SUBROUTINE libxsmm_otrans_omp(output, input,             &
-     &    typesize, m, n, ldi, ldo) BIND(C, NAME="libxsmm_otrans_omp_")
+     &    typesize, m, n, ldi, ldo)                                     &
+     &    BIND(C, NAME="libxsmm_otrans_omp_")
             IMPORT C_PTR, C_INT, LIBXSMM_BLASINT_KIND
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m, n, ldi, ldo
             TYPE(C_PTR), INTENT(IN), VALUE :: output, input
@@ -546,8 +420,8 @@
             CHARACTER(C_CHAR), INTENT(IN) :: transa, transb
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m, n, k
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: lda, ldb, ldc
-            REAL(C_FLOAT), INTENT(IN) :: alpha, beta
-            REAL(C_FLOAT), INTENT(IN) :: a(lda,*), b(ldb,*)
+            REAL(C_FLOAT), INTENT(IN)    :: alpha, beta
+            REAL(C_FLOAT), INTENT(IN)    :: a(lda,*), b(ldb,*)
             REAL(C_FLOAT), INTENT(INOUT) :: c(ldc,*)
           END SUBROUTINE
 
@@ -566,7 +440,8 @@
           PURE SUBROUTINE libxsmm_mmbatch(iprec, oprec, transa, transb, &
      &    m, n, k, alpha, a, lda, b, ldb, beta, c, ldc, index_base,     &
      &    index_stride, stride_a, stride_b, stride_c, batchsize,        &
-     &    tid, nthreads) BIND(C, NAME="libxsmm_mmbatch_")
+     &    tid, nthreads)                                                &
+     &    BIND(C, NAME="libxsmm_mmbatch_")
             IMPORT C_PTR, C_CHAR, C_INT, LIBXSMM_BLASINT_KIND
             !> Determines index-base (usually 0, 1 for one-based indexes).
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: index_base
@@ -577,7 +452,7 @@
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: batchsize
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m, n, k
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: lda, ldb, ldc
-            CHARACTER(C_CHAR), INTENT(IN) :: transa, transb
+            CHARACTER(C_CHAR),  INTENT(IN) :: transa, transb
             TYPE(C_PTR), INTENT(IN), VALUE :: alpha, beta
             TYPE(C_PTR), INTENT(IN), VALUE :: a, b, c
             !> Arrays of indexes determining the position of a, b, and c operands.
@@ -600,14 +475,15 @@
           PURE SUBROUTINE libxsmm_gemm_batch(iprec, oprec,              &
      &    transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc, &
      &    index_base, index_stride, stride_a, stride_b, stride_c,       &
-     &    batchsize) BIND(C, NAME="libxsmm_gemm_batch_")
+     &    batchsize)                                                    &
+     &    BIND(C, NAME="libxsmm_gemm_batch_")
             IMPORT C_PTR, C_CHAR, C_INT, LIBXSMM_BLASINT_KIND
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: index_base
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: index_stride
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: batchsize
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m, n, k
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: lda, ldb, ldc
-            CHARACTER(C_CHAR), INTENT(IN) :: transa, transb
+            CHARACTER(C_CHAR),  INTENT(IN) :: transa, transb
             TYPE(C_PTR), INTENT(IN), VALUE :: alpha, beta
             TYPE(C_PTR), INTENT(IN), VALUE :: a, b, c
             TYPE(C_PTR), INTENT(IN), VALUE :: stride_a
@@ -627,14 +503,15 @@
           PURE SUBROUTINE libxsmm_gemm_batch_omp(iprec, oprec,          &
      &    transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc, &
      &    index_base, index_stride, stride_a, stride_b, stride_c,       &
-     &    batchsize) BIND(C, NAME="libxsmm_gemm_batch_omp_")
+     &    batchsize)                                                    &
+     &    BIND(C, NAME="libxsmm_gemm_batch_omp_")
             IMPORT C_PTR, C_CHAR, C_INT, LIBXSMM_BLASINT_KIND
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: index_base
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: index_stride
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: batchsize
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m, n, k
             INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: lda, ldb, ldc
-            CHARACTER(C_CHAR), INTENT(IN) :: transa, transb
+            CHARACTER(C_CHAR),  INTENT(IN) :: transa, transb
             TYPE(C_PTR), INTENT(IN), VALUE :: alpha, beta
             TYPE(C_PTR), INTENT(IN), VALUE :: a, b, c
             TYPE(C_PTR), INTENT(IN), VALUE :: stride_a
@@ -684,7 +561,190 @@
             IMPORT LIBXSMM_MATDIFF_INFO
             TYPE(LIBXSMM_MATDIFF_INFO), INTENT(OUT) :: info
           END SUBROUTINE
+
+          !> Calculates a hash value for the given array and seed.
+          !> Routine suitable for FORTRAN 77; keysize in Bytes.
+          PURE SUBROUTINE libxsmm_xhash(hash_seed, key, keysize)        &
+     &    BIND(C, NAME="libxsmm_xhash_")
+            IMPORT C_INT, C_PTR
+            INTEGER(C_INT), INTENT(INOUT)  :: hash_seed
+            INTEGER(C_INT), INTENT(IN)     :: keysize
+            TYPE(C_PTR), INTENT(IN), VALUE :: key
+          END SUBROUTINE
+
+          !> Calculates if there is a difference between two arrays.
+          !> Routine suitable for FORTRAN 77; size in Bytes.
+          PURE SUBROUTINE libxsmm_xdiff(diff, a, b, nbytes)             &
+     &    BIND(C, NAME="libxsmm_xdiff_")
+            IMPORT C_PTR, C_LONG_LONG, C_BOOL
+            TYPE(C_PTR), INTENT(IN), VALUE   :: a, b
+            INTEGER(C_LONG_LONG), INTENT(IN) :: nbytes
+            LOGICAL(C_BOOL), INTENT(OUT)     :: diff
+          END SUBROUTINE
         END INTERFACE$MNK_INTERFACE_LIST
+
+        INTERFACE libxsmm_ptr0
+          MODULE PROCEDURE libxsmm_ptr_z0, libxsmm_ptr_c0
+          MODULE PROCEDURE libxsmm_ptr_d0, libxsmm_ptr_s0
+          MODULE PROCEDURE libxsmm_ptr_i0, libxsmm_ptr_w0
+          MODULE PROCEDURE libxsmm_ptr_j0 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_b0 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_l0 !! long long
+        END INTERFACE
+
+        INTERFACE libxsmm_ptr1
+          MODULE PROCEDURE libxsmm_ptr_z1, libxsmm_ptr_c1
+          MODULE PROCEDURE libxsmm_ptr_d1, libxsmm_ptr_s1
+          MODULE PROCEDURE libxsmm_ptr_i1, libxsmm_ptr_w1
+          MODULE PROCEDURE libxsmm_ptr_j1 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_b1 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_l1 !! long long
+        END INTERFACE
+
+        INTERFACE libxsmm_ptr2
+          MODULE PROCEDURE libxsmm_ptr_z2, libxsmm_ptr_c2
+          MODULE PROCEDURE libxsmm_ptr_d2, libxsmm_ptr_s2
+          MODULE PROCEDURE libxsmm_ptr_i2, libxsmm_ptr_w2
+          MODULE PROCEDURE libxsmm_ptr_j2 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_b2 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_l2 !! long long
+        END INTERFACE
+
+        INTERFACE libxsmm_ptr
+          MODULE PROCEDURE libxsmm_ptr_z0, libxsmm_ptr_c0
+          MODULE PROCEDURE libxsmm_ptr_d0, libxsmm_ptr_s0
+          MODULE PROCEDURE libxsmm_ptr_i0, libxsmm_ptr_w0
+          MODULE PROCEDURE libxsmm_ptr_j0 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_b0 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_l0 !! long long
+          MODULE PROCEDURE libxsmm_ptr_z1, libxsmm_ptr_c1
+          MODULE PROCEDURE libxsmm_ptr_d1, libxsmm_ptr_s1
+          MODULE PROCEDURE libxsmm_ptr_i1, libxsmm_ptr_w1
+          MODULE PROCEDURE libxsmm_ptr_j1 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_b1 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_l1 !! long long
+          MODULE PROCEDURE libxsmm_ptr_z2, libxsmm_ptr_c2
+          MODULE PROCEDURE libxsmm_ptr_d2, libxsmm_ptr_s2
+          MODULE PROCEDURE libxsmm_ptr_i2, libxsmm_ptr_w2
+          MODULE PROCEDURE libxsmm_ptr_j2 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_b2 !! Byte/char
+          MODULE PROCEDURE libxsmm_ptr_l2 !! long long
+        END INTERFACE
+
+        !> Deallocates JIT'ted code, or unregisters/releases code from registry.
+        INTERFACE libxsmm_release_mmkernel
+          MODULE PROCEDURE libxsmm_release_dmmkernel
+          MODULE PROCEDURE libxsmm_release_smmkernel
+          MODULE PROCEDURE libxsmm_release_wimmkernel
+        END INTERFACE
+
+        !> Construct JIT-code depending on given argument set.
+        INTERFACE libxsmm_mmdispatch
+          MODULE PROCEDURE libxsmm_dmmdispatch, libxsmm_smmdispatch
+          MODULE PROCEDURE libxsmm_wimmdispatch
+        END INTERFACE
+
+        !> Construct JIT-code depending on given argument set.
+        INTERFACE libxsmm_dispatch
+          MODULE PROCEDURE libxsmm_dmmdispatch, libxsmm_smmdispatch
+          MODULE PROCEDURE libxsmm_wimmdispatch
+        END INTERFACE
+
+        !> Check if a function is available (LIBXSMM_?MMFUNCTION).
+        INTERFACE libxsmm_mmavailable
+          MODULE PROCEDURE libxsmm_dmmavailable, libxsmm_smmavailable
+          MODULE PROCEDURE libxsmm_wimmavailable
+        END INTERFACE
+
+        !> Check if a function is available (LIBXSMM_?MMFUNCTION).
+        INTERFACE libxsmm_available
+          MODULE PROCEDURE libxsmm_smmavailable, libxsmm_dmmavailable
+          MODULE PROCEDURE libxsmm_wimmavailable
+        END INTERFACE
+
+        !> Overloaded GEMM routines (double-precision).
+        INTERFACE libxsmm_dgemm
+          MODULE PROCEDURE libxsmm_dgemm0
+          MODULE PROCEDURE libxsmm_dgemm1
+          MODULE PROCEDURE libxsmm_dgemm2
+          MODULE PROCEDURE libxsmm_dgemm3
+        END INTERFACE
+
+        !> Overloaded GEMM routines (single-precision).
+        INTERFACE libxsmm_sgemm
+          MODULE PROCEDURE libxsmm_sgemm0
+          MODULE PROCEDURE libxsmm_sgemm1
+          MODULE PROCEDURE libxsmm_sgemm2
+        END INTERFACE
+
+        !> Overloaded GEMM routines (low-precision).
+        INTERFACE libxsmm_wigemm
+          MODULE PROCEDURE libxsmm_wigemm0
+          MODULE PROCEDURE libxsmm_wigemm1
+          MODULE PROCEDURE libxsmm_wigemm2
+        END INTERFACE
+
+        !> Overloaded GEMM routines.
+        INTERFACE libxsmm_gemm
+          MODULE PROCEDURE libxsmm_dgemm0
+          MODULE PROCEDURE libxsmm_dgemm1
+          MODULE PROCEDURE libxsmm_dgemm2
+          MODULE PROCEDURE libxsmm_dgemm3
+          MODULE PROCEDURE libxsmm_sgemm0
+          MODULE PROCEDURE libxsmm_sgemm1
+          MODULE PROCEDURE libxsmm_sgemm2
+          MODULE PROCEDURE libxsmm_sgemm3
+          MODULE PROCEDURE libxsmm_wigemm0
+          MODULE PROCEDURE libxsmm_wigemm1
+          MODULE PROCEDURE libxsmm_wigemm2
+          MODULE PROCEDURE libxsmm_wigemm3
+        END INTERFACE
+
+        !> Overloaded BLAS GEMM routines (double-precision).
+        INTERFACE libxsmm_blas_dgemm
+          MODULE PROCEDURE libxsmm_blas_dgemm0
+          MODULE PROCEDURE libxsmm_blas_dgemm1
+          MODULE PROCEDURE libxsmm_blas_dgemm2
+          MODULE PROCEDURE libxsmm_blas_dgemm3
+        END INTERFACE
+
+        !> Overloaded BLAS GEMM routines (single-precision).
+        INTERFACE libxsmm_blas_sgemm
+          MODULE PROCEDURE libxsmm_blas_sgemm0
+          MODULE PROCEDURE libxsmm_blas_sgemm1
+          MODULE PROCEDURE libxsmm_blas_sgemm2
+          MODULE PROCEDURE libxsmm_blas_sgemm3
+        END INTERFACE
+
+        !> Overloaded BLAS GEMM routines (single/double-precision).
+        INTERFACE libxsmm_blas_gemm
+          MODULE PROCEDURE libxsmm_blas_dgemm0
+          MODULE PROCEDURE libxsmm_blas_dgemm1
+          MODULE PROCEDURE libxsmm_blas_dgemm2
+          MODULE PROCEDURE libxsmm_blas_dgemm3
+          MODULE PROCEDURE libxsmm_blas_sgemm0
+          MODULE PROCEDURE libxsmm_blas_sgemm1
+          MODULE PROCEDURE libxsmm_blas_sgemm2
+          MODULE PROCEDURE libxsmm_blas_sgemm3
+        END INTERFACE
+
+        !> Calculate a hash value for a given key value (binary blob).
+        !> Conceptually pure, but C_LOC may be (incorrectly) impure.
+        INTERFACE libxsmm_hash
+          MODULE PROCEDURE libxsmm_hash_char
+          MODULE PROCEDURE libxsmm_hash_i8
+          MODULE PROCEDURE libxsmm_hash_i32
+          MODULE PROCEDURE libxsmm_hash_i64
+        END INTERFACE
+
+        !> Calculate whether there is a difference between two series of items.
+        !> Conceptually pure, but C_LOC may be (incorrectly) impure.
+        INTERFACE libxsmm_diff
+          MODULE PROCEDURE libxsmm_diff_char
+          MODULE PROCEDURE libxsmm_diff_i8
+          MODULE PROCEDURE libxsmm_diff_i32
+          MODULE PROCEDURE libxsmm_diff_i64
+        END INTERFACE
 
       CONTAINS
         !> Returns the name of the target architecture as determined by
@@ -708,328 +768,184 @@
           CALL C_F_POINTER(arch, libxsmm_get_target_arch, length)
         END FUNCTION
 
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
+        !> Determines the C-address of the given array.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_z0
         FUNCTION libxsmm_ptr_z0(a)
           COMPLEX(C_DOUBLE_COMPLEX), INTENT(IN), TARGET :: a
-          COMPLEX(C_DOUBLE_COMPLEX), POINTER :: fptr
           TYPE(C_PTR) :: libxsmm_ptr_z0
-          fptr => a; libxsmm_ptr_z0 = C_LOC(fptr)
+          libxsmm_ptr_z0 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_z1
         FUNCTION libxsmm_ptr_z1(a)
-          COMPLEX(C_DOUBLE_COMPLEX), INTENT(IN) :: a(:)
+          COMPLEX(C_DOUBLE_COMPLEX), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_z1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_z1 = libxsmm_ptr_z0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_z1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_z1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_z2
         FUNCTION libxsmm_ptr_z2(a)
           COMPLEX(C_DOUBLE_COMPLEX), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_z2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_z2 = libxsmm_ptr_z0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_z2 = C_NULL_PTR
-          END IF
-        END FUNCTION
-
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_c0
-        FUNCTION libxsmm_ptr_c0(a)
-          COMPLEX(C_FLOAT_COMPLEX), INTENT(IN), TARGET :: a
-          COMPLEX(C_FLOAT_COMPLEX), POINTER :: fptr
-          TYPE(C_PTR) :: libxsmm_ptr_c0
-          fptr => a; libxsmm_ptr_c0 = C_LOC(fptr)
+          libxsmm_ptr_z2 = libxsmm_ptr_z1(a)
         END FUNCTION
 
         !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_c0
+        FUNCTION libxsmm_ptr_c0(a)
+          COMPLEX(C_FLOAT_COMPLEX), INTENT(IN), TARGET :: a
+          TYPE(C_PTR) :: libxsmm_ptr_c0
+          libxsmm_ptr_c0 = C_LOC(a)
+        END FUNCTION
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_c1
         FUNCTION libxsmm_ptr_c1(a)
-          COMPLEX(C_FLOAT_COMPLEX), INTENT(IN) :: a(:)
+          COMPLEX(C_FLOAT_COMPLEX), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_c1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_c1 = libxsmm_ptr_c0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_c1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_c1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_c2
         FUNCTION libxsmm_ptr_c2(a)
           COMPLEX(C_FLOAT_COMPLEX), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_c2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_c2 = libxsmm_ptr_c0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_c2 = C_NULL_PTR
-          END IF
-        END FUNCTION
-
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_d0
-        FUNCTION libxsmm_ptr_d0(a)
-          REAL(C_DOUBLE), INTENT(IN), TARGET :: a
-          REAL(C_DOUBLE), POINTER :: fptr
-          TYPE(C_PTR) :: libxsmm_ptr_d0
-          fptr => a; libxsmm_ptr_d0 = C_LOC(fptr)
+          libxsmm_ptr_c2 = libxsmm_ptr_c1(a)
         END FUNCTION
 
         !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_d0
+        FUNCTION libxsmm_ptr_d0(a)
+          REAL(C_DOUBLE), INTENT(IN), TARGET :: a
+          TYPE(C_PTR) :: libxsmm_ptr_d0
+          libxsmm_ptr_d0 = C_LOC(a)
+        END FUNCTION
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_d1
         FUNCTION libxsmm_ptr_d1(a)
-          REAL(C_DOUBLE), INTENT(IN) :: a(:)
+          REAL(C_DOUBLE), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_d1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_d1 = libxsmm_ptr_d0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_d1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_d1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_d2
         FUNCTION libxsmm_ptr_d2(a)
           REAL(C_DOUBLE), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_d2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_d2 = libxsmm_ptr_d0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_d2 = C_NULL_PTR
-          END IF
-        END FUNCTION
-
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_s0
-        FUNCTION libxsmm_ptr_s0(a)
-          REAL(C_FLOAT), INTENT(IN), TARGET :: a
-          REAL(C_FLOAT), POINTER :: fptr
-          TYPE(C_PTR) :: libxsmm_ptr_s0
-          fptr => a; libxsmm_ptr_s0 = C_LOC(fptr)
+          libxsmm_ptr_d2 = libxsmm_ptr_d1(a)
         END FUNCTION
 
         !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_s0
+        FUNCTION libxsmm_ptr_s0(a)
+          REAL(C_FLOAT), INTENT(IN), TARGET :: a
+          TYPE(C_PTR) :: libxsmm_ptr_s0
+          libxsmm_ptr_s0 = C_LOC(a)
+        END FUNCTION
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_s1
         FUNCTION libxsmm_ptr_s1(a)
-          REAL(C_FLOAT), INTENT(IN) :: a(:)
+          REAL(C_FLOAT), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_s1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_s1 = libxsmm_ptr_s0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_s1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_s1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_s2
         FUNCTION libxsmm_ptr_s2(a)
           REAL(C_FLOAT), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_s2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_s2 = libxsmm_ptr_s0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_s2 = C_NULL_PTR
-          END IF
-        END FUNCTION
-
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_i0
-        FUNCTION libxsmm_ptr_i0(a)
-          INTEGER(C_INT), INTENT(IN), TARGET :: a
-          INTEGER(C_INT), POINTER :: fptr
-          TYPE(C_PTR) :: libxsmm_ptr_i0
-          fptr => a; libxsmm_ptr_i0 = C_LOC(fptr)
+          libxsmm_ptr_s2 = libxsmm_ptr_s1(a)
         END FUNCTION
 
         !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_i0
+        FUNCTION libxsmm_ptr_i0(a)
+          INTEGER(C_INT), INTENT(IN), TARGET :: a
+          TYPE(C_PTR) :: libxsmm_ptr_i0
+          libxsmm_ptr_i0 = C_LOC(a)
+        END FUNCTION
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_i1
         FUNCTION libxsmm_ptr_i1(a)
-          INTEGER(C_INT), INTENT(IN) :: a(:)
+          INTEGER(C_INT), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_i1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_i1 = libxsmm_ptr_i0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_i1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_i1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_i2
         FUNCTION libxsmm_ptr_i2(a)
           INTEGER(C_INT), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_i2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_i2 = libxsmm_ptr_i0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_i2 = C_NULL_PTR
-          END IF
-        END FUNCTION
-
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_w0
-        FUNCTION libxsmm_ptr_w0(a)
-          INTEGER(C_SHORT), INTENT(IN), TARGET :: a
-          INTEGER(C_SHORT), POINTER :: fptr
-          TYPE(C_PTR) :: libxsmm_ptr_w0
-          fptr => a; libxsmm_ptr_w0 = C_LOC(fptr)
+          libxsmm_ptr_i2 = libxsmm_ptr_i1(a)
         END FUNCTION
 
         !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_w0
+        FUNCTION libxsmm_ptr_w0(a)
+          INTEGER(C_SHORT), INTENT(IN), TARGET :: a
+          TYPE(C_PTR) :: libxsmm_ptr_w0
+          libxsmm_ptr_w0 = C_LOC(a)
+        END FUNCTION
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_w1
         FUNCTION libxsmm_ptr_w1(a)
-          INTEGER(C_SHORT), INTENT(IN) :: a(:)
+          INTEGER(C_SHORT), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_w1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_w1 = libxsmm_ptr_w0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_w1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_w1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_w2
         FUNCTION libxsmm_ptr_w2(a)
           INTEGER(C_SHORT), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_w2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_w2 = libxsmm_ptr_w0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_w2 = C_NULL_PTR
-          END IF
-        END FUNCTION
-
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_j0
-        FUNCTION libxsmm_ptr_j0(a)
-          INTEGER(C_INT8_T), INTENT(IN), TARGET :: a
-          INTEGER(C_INT8_T), POINTER :: fptr
-          TYPE(C_PTR) :: libxsmm_ptr_j0
-          fptr => a; libxsmm_ptr_j0 = C_LOC(fptr)
+          libxsmm_ptr_w2 = libxsmm_ptr_w1(a)
         END FUNCTION
 
         !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_j0
+        FUNCTION libxsmm_ptr_j0(a)
+          INTEGER(C_INT8_T), INTENT(IN), TARGET :: a
+          TYPE(C_PTR) :: libxsmm_ptr_j0
+          libxsmm_ptr_j0 = C_LOC(a)
+        END FUNCTION
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_j1
         FUNCTION libxsmm_ptr_j1(a)
-          INTEGER(C_INT8_T), INTENT(IN) :: a(:)
+          INTEGER(C_INT8_T), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_j1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_j1 = libxsmm_ptr_j0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_j1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_j1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_j2
         FUNCTION libxsmm_ptr_j2(a)
           INTEGER(C_INT8_T), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_j2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_j2 = libxsmm_ptr_j0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_j2 = C_NULL_PTR
-          END IF
-        END FUNCTION
-
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_b0
-        FUNCTION libxsmm_ptr_b0(a)
-          CHARACTER(C_CHAR), INTENT(IN), TARGET :: a
-          CHARACTER(C_CHAR), POINTER :: fptr
-          TYPE(C_PTR) :: libxsmm_ptr_b0
-          fptr => a; libxsmm_ptr_b0 = C_LOC(fptr)
+          libxsmm_ptr_j2 = libxsmm_ptr_j1(a)
         END FUNCTION
 
         !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_b0
+        FUNCTION libxsmm_ptr_b0(a)
+          CHARACTER(C_CHAR), INTENT(IN), TARGET :: a
+          TYPE(C_PTR) :: libxsmm_ptr_b0
+          libxsmm_ptr_b0 = C_LOC(a)
+        END FUNCTION
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_b1
         FUNCTION libxsmm_ptr_b1(a)
-          CHARACTER(C_CHAR), INTENT(IN) :: a(:)
+          CHARACTER(C_CHAR), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_b1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_b1 = libxsmm_ptr_b0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_b1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_b1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_b2
         FUNCTION libxsmm_ptr_b2(a)
           CHARACTER(C_CHAR), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_b2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_b2 = libxsmm_ptr_b0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_b2 = C_NULL_PTR
-          END IF
-        END FUNCTION
-
-        !> Determines the C-address of the given scalar.
-        !> This overload belongs to libxsmm_ptr0.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_l0
-        FUNCTION libxsmm_ptr_l0(a)
-          INTEGER(C_LONG_LONG), INTENT(IN), TARGET :: a
-          INTEGER(C_LONG_LONG), POINTER :: fptr
-          TYPE(C_PTR) :: libxsmm_ptr_l0
-          fptr => a; libxsmm_ptr_l0 = C_LOC(fptr)
+          libxsmm_ptr_b2 = libxsmm_ptr_b1(a)
         END FUNCTION
 
         !> Determines the C-address of the given array.
-        !> This overload belongs to libxsmm_ptr1.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_l0
+        FUNCTION libxsmm_ptr_l0(a)
+          INTEGER(C_LONG_LONG), INTENT(IN), TARGET :: a
+          TYPE(C_PTR) :: libxsmm_ptr_l0
+          libxsmm_ptr_l0 = C_LOC(a)
+        END FUNCTION
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_l1
         FUNCTION libxsmm_ptr_l1(a)
-          INTEGER(C_LONG_LONG), INTENT(IN) :: a(:)
+          INTEGER(C_LONG_LONG), INTENT(IN), TARGET :: a(*)
           TYPE(C_PTR) :: libxsmm_ptr_l1
-          IF (0.LT.SIZE(a)) THEN
-            libxsmm_ptr_l1 = libxsmm_ptr_l0(a(LBOUND(a,1)))
-          ELSE
-            libxsmm_ptr_l1 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_l1 = C_LOC(a)
         END FUNCTION
-
-        !> Determines the C-address of the given 2d-array.
-        !> This overload belongs to libxsmm_ptr2.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_ptr_l2
         FUNCTION libxsmm_ptr_l2(a)
           INTEGER(C_LONG_LONG), INTENT(IN) :: a(:,:)
           TYPE(C_PTR) :: libxsmm_ptr_l2
-          IF (ALL(0.LT.SHAPE(a))) THEN
-            libxsmm_ptr_l2 = libxsmm_ptr_l0(a(LBOUND(a,1),LBOUND(a,2)))
-          ELSE
-            libxsmm_ptr_l2 = C_NULL_PTR
-          END IF
+          libxsmm_ptr_l2 = libxsmm_ptr_l1(a)
         END FUNCTION
 
         !> Deallocate JIT'ted code created by libxsmm_create routines. To
@@ -1134,176 +1050,222 @@
           libxsmm_wimmavailable = C_ASSOCIATED(kernel%handle)
         END FUNCTION
 
-        !> Calls the kernel for the given arguments. Alternatively,
+        !> Calls the kernel with the given arguments. Alternatively,
         !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_dmmcall
-        SUBROUTINE libxsmm_dmmcall(kernel, a,b,c, pa,pb,pc)
-          TYPE(LIBXSMM_DMMFUNCTION), INTENT(IN) :: kernel
-          REAL(C_DOUBLE), INTENT(IN), TARGET :: a(*), b(*)
-          REAL(C_DOUBLE), INTENT(INOUT), TARGET :: c(*)
-          REAL(C_DOUBLE), INTENT(IN), OPTIONAL, TARGET :: pa(*)
-          REAL(C_DOUBLE), INTENT(IN), OPTIONAL, TARGET :: pb(*)
-          REAL(C_DOUBLE), INTENT(IN), OPTIONAL, TARGET :: pc(*)
-          ! PROCEDURE(LIBXSMM_FUNCTION6), POINTER :: xmm6
-          ! PROCEDURE(LIBXSMM_FUNCTION3), POINTER :: xmm3
-          ! use .OR. instead of .AND. to avoid full check
-          IF (PRESENT(pa).OR.PRESENT(pb).OR.PRESENT(pc)) THEN
-            ! CALL C_F_PROCPOINTER(kernel%handle, xmm6)
-            ! CALL xmm6(
-            CALL libxsmm_xmmcall_prf(kernel%handle,                     &
-     &        C_LOC(a), C_LOC(b), C_LOC(c),                             &
-     &        C_LOC(pa), C_LOC(pb), C_LOC(pc))
-          ELSE
-            ! CALL C_F_PROCPOINTER(kernel%handle, xmm3)
-            ! CALL xmm3(
-            CALL libxsmm_xmmcall_abc(kernel%handle,                     &
-     &        C_LOC(a), C_LOC(b), C_LOC(c))
-          END IF
-        END SUBROUTINE
-
-        !> Calls the kernel for the given arguments. Alternatively,
-        !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_smmcall
-        SUBROUTINE libxsmm_smmcall(kernel, a,b,c, pa,pb,pc)
-          TYPE(LIBXSMM_SMMFUNCTION), INTENT(IN) :: kernel
-          REAL(C_FLOAT), INTENT(IN), TARGET :: a(*), b(*)
-          REAL(C_FLOAT), INTENT(INOUT), TARGET :: c(*)
-          REAL(C_FLOAT), INTENT(IN), OPTIONAL, TARGET :: pa(*)
-          REAL(C_FLOAT), INTENT(IN), OPTIONAL, TARGET :: pb(*)
-          REAL(C_FLOAT), INTENT(IN), OPTIONAL, TARGET :: pc(*)
-          ! PROCEDURE(LIBXSMM_FUNCTION6), POINTER :: xmm6
-          ! PROCEDURE(LIBXSMM_FUNCTION3), POINTER :: xmm3
-          ! use .OR. instead of .AND. to avoid full check
-          IF (PRESENT(pa).OR.PRESENT(pb).OR.PRESENT(pc)) THEN
-            ! CALL C_F_PROCPOINTER(kernel%handle, xmm6)
-            ! CALL xmm6(
-            CALL libxsmm_xmmcall_prf(kernel%handle,                     &
-     &        C_LOC(a), C_LOC(b), C_LOC(c),                             &
-     &        C_LOC(pa), C_LOC(pb), C_LOC(pc))
-          ELSE
-            ! CALL C_F_PROCPOINTER(kernel%handle, xmm3)
-            ! CALL xmm3(
-            CALL libxsmm_xmmcall_abc(kernel%handle,                     &
-     &        C_LOC(a), C_LOC(b), C_LOC(c))
-          END IF
-        END SUBROUTINE
-
-        !> Calls the kernel for the given arguments. Alternatively,
-        !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_wimmcall
-        SUBROUTINE libxsmm_wimmcall(kernel, a,b,c, pa,pb,pc)
-          TYPE(LIBXSMM_WIMMFUNCTION), INTENT(IN) :: kernel
-          INTEGER(C_SHORT), INTENT(IN),  TARGET :: a(*), b(*)
-          INTEGER(C_INT), INTENT(INOUT), TARGET :: c(*)
-          INTEGER(C_SHORT), INTENT(IN), OPTIONAL, TARGET :: pa(*)
-          INTEGER(C_SHORT), INTENT(IN), OPTIONAL, TARGET :: pb(*)
-          INTEGER(C_INT),   INTENT(IN), OPTIONAL, TARGET :: pc(*)
-          ! PROCEDURE(LIBXSMM_FUNCTION6), POINTER :: xmm6
-          ! PROCEDURE(LIBXSMM_FUNCTION3), POINTER :: xmm3
-          ! use .OR. instead of .AND. to avoid full check
-          IF (PRESENT(pa).OR.PRESENT(pb).OR.PRESENT(pc)) THEN
-            ! CALL C_F_PROCPOINTER(kernel%handle, xmm6)
-            ! CALL xmm6(
-            CALL libxsmm_xmmcall_prf(kernel%handle,                     &
-     &        C_LOC(a), C_LOC(b), C_LOC(c),                             &
-     &        C_LOC(pa), C_LOC(pb), C_LOC(pc))
-          ELSE
-            ! CALL C_F_PROCPOINTER(kernel%handle, xmm3)
-            ! CALL xmm3(
-            CALL libxsmm_xmmcall_abc(kernel%handle,                     &
-     &        C_LOC(a), C_LOC(b), C_LOC(c))
-          END IF
-        END SUBROUTINE
-
-        !> Calls the kernel for the given arguments. Alternatively,
-        !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
+        !> of this routine (LIBXSMM_FUNCTION3). The libxsmm_xmmcall
+        !> routines can be used in FORTRAN77.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_dmmcall_abc
         SUBROUTINE libxsmm_dmmcall_abc(kernel, a, b, c)
           TYPE(LIBXSMM_DMMFUNCTION), INTENT(IN) :: kernel
-          TYPE(C_PTR), INTENT(IN) :: a, b, c
+          REAL(C_DOUBLE), INTENT(IN),    TARGET :: a(*), b(*)
+          REAL(C_DOUBLE), INTENT(INOUT), TARGET :: c(*)
           ! PROCEDURE(LIBXSMM_FUNCTION3), POINTER :: xmm
           ! CALL C_F_PROCPOINTER(kernel%handle, xmm)
-          ! CALL xmm(a, b, c)
-          CALL libxsmm_xmmcall_abc(kernel%handle, a, b, c)
+          ! CALL xmm(...)
+          CALL libxsmm_xmmcall_abc(kernel%handle,                       &
+     &      C_LOC(a), C_LOC(b), C_LOC(c))
         END SUBROUTINE
 
-        !> Calls the kernel for the given arguments. Alternatively,
+        !> Calls the kernel with the given arguments. Alternatively,
         !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
+        !> of this routine (LIBXSMM_FUNCTION6). The libxsmm_xmmcall
+        !> routines can be used in FORTRAN77.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_dmmcall_prf
+        SUBROUTINE libxsmm_dmmcall_prf(kernel, a, b, c, pa, pb, pc)
+          TYPE(LIBXSMM_DMMFUNCTION), INTENT(IN) :: kernel
+          REAL(C_DOUBLE), INTENT(IN),    TARGET ::  a(*), b(*)
+          REAL(C_DOUBLE), INTENT(INOUT), TARGET ::  c(*)
+          REAL(C_DOUBLE), INTENT(IN),    TARGET :: pa(*)
+          REAL(C_DOUBLE), INTENT(IN),    TARGET :: pb(*)
+          REAL(C_DOUBLE), INTENT(IN),    TARGET :: pc(*)
+          ! PROCEDURE(LIBXSMM_FUNCTION6), POINTER :: xmm
+          ! CALL C_F_PROCPOINTER(kernel%handle, xmm)
+          ! CALL xmm(...)
+          CALL libxsmm_xmmcall_prf(kernel%handle,                       &
+     &      C_LOC(a),  C_LOC(b),  C_LOC(c),                             &
+     &      C_LOC(pa), C_LOC(pb), C_LOC(pc))
+        END SUBROUTINE
+
+        !> See also libxsmm_dmmcall_abc and libxsmm_dmmcall_prf.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_dmmcall
+        SUBROUTINE libxsmm_dmmcall(kernel, a, b, c, pa, pb, pc)
+          TYPE(LIBXSMM_DMMFUNCTION),        INTENT(IN) :: kernel
+          REAL(C_DOUBLE), INTENT(IN),           TARGET ::  a(*), b(*)
+          REAL(C_DOUBLE), INTENT(INOUT),        TARGET ::  c(*)
+          REAL(C_DOUBLE), INTENT(IN), OPTIONAL, TARGET :: pa(*)
+          REAL(C_DOUBLE), INTENT(IN), OPTIONAL, TARGET :: pb(*)
+          REAL(C_DOUBLE), INTENT(IN), OPTIONAL, TARGET :: pc(*)
+          ! use .OR. instead of .AND. to avoid full check
+          IF (PRESENT(pa).OR.PRESENT(pb).OR.PRESENT(pc)) THEN
+            CALL libxsmm_xmmcall_prf(kernel%handle,                     &
+     &        C_LOC(a),  C_LOC(b),  C_LOC(c),                           &
+     &        C_LOC(pa), C_LOC(pb), C_LOC(pc))
+          ELSE
+            CALL libxsmm_xmmcall_abc(kernel%handle,                     &
+     &        C_LOC(a), C_LOC(b), C_LOC(c))
+          END IF
+        END SUBROUTINE
+
+        !> Calls the kernel with the given arguments. Alternatively,
+        !> PROCPOINTER can be used as shown by the inner comments
+        !> of this routine (LIBXSMM_FUNCTION3). The libxsmm_xmmcall
+        !> routines can be used in FORTRAN77.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_smmcall_abc
         SUBROUTINE libxsmm_smmcall_abc(kernel, a, b, c)
           TYPE(LIBXSMM_SMMFUNCTION), INTENT(IN) :: kernel
-          TYPE(C_PTR), INTENT(IN) :: a, b, c
+          REAL(C_FLOAT), INTENT(IN),     TARGET :: a(*), b(*)
+          REAL(C_FLOAT), INTENT(INOUT),  TARGET :: c(*)
           ! PROCEDURE(LIBXSMM_FUNCTION3), POINTER :: xmm
           ! CALL C_F_PROCPOINTER(kernel%handle, xmm)
-          ! CALL xmm(a, b, c)
-          CALL libxsmm_xmmcall_abc(kernel%handle, a, b, c)
+          ! CALL xmm(...)
+          CALL libxsmm_xmmcall_abc(kernel%handle,                       &
+     &      C_LOC(a), C_LOC(b), C_LOC(c))
         END SUBROUTINE
 
-        !> Calls the kernel for the given arguments. Alternatively,
+        !> Calls the kernel with the given arguments. Alternatively,
         !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_wimmcall_abc
-        SUBROUTINE libxsmm_wimmcall_abc(kernel, a, b, c)
-          TYPE(LIBXSMM_WIMMFUNCTION), INTENT(IN) :: kernel
-          TYPE(C_PTR), INTENT(IN) :: a, b, c
-          ! PROCEDURE(LIBXSMM_FUNCTION3), POINTER :: xmm
-          ! CALL C_F_PROCPOINTER(kernel%handle, xmm)
-          ! CALL xmm(a, b, c)
-          CALL libxsmm_xmmcall_abc(kernel%handle, a, b, c)
-        END SUBROUTINE
-
-        !> Calls the kernel for the given arguments. Alternatively,
-        !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_dmmcall_prf
-        SUBROUTINE libxsmm_dmmcall_prf(kernel, a,b,c, pa,pb,pc)
-          TYPE(LIBXSMM_DMMFUNCTION), INTENT(IN) :: kernel
-          TYPE(C_PTR), INTENT(IN) :: a, b, c, pa, pb, pc
-          ! PROCEDURE(LIBXSMM_FUNCTION6), POINTER :: xmm
-          ! CALL C_F_PROCPOINTER(kernel%handle, xmm)
-          ! CALL xmm(a, b, c, pa, pb, pc)
-          CALL libxsmm_xmmcall_prf(kernel%handle, a, b, c, pa, pb, pc)
-        END SUBROUTINE
-
-        !> Calls the kernel for the given arguments. Alternatively,
-        !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
+        !> of this routine (LIBXSMM_FUNCTION6). The libxsmm_xmmcall
+        !> routines can be used in FORTRAN77.
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_smmcall_prf
-        SUBROUTINE libxsmm_smmcall_prf(kernel, a,b,c, pa,pb,pc)
+        SUBROUTINE libxsmm_smmcall_prf(kernel, a, b, c, pa, pb, pc)
           TYPE(LIBXSMM_SMMFUNCTION), INTENT(IN) :: kernel
-          TYPE(C_PTR), INTENT(IN) :: a, b, c, pa, pb, pc
+          REAL(C_FLOAT), INTENT(IN),     TARGET ::  a(*), b(*)
+          REAL(C_FLOAT), INTENT(INOUT),  TARGET ::  c(*)
+          REAL(C_FLOAT), INTENT(IN),     TARGET :: pa(*)
+          REAL(C_FLOAT), INTENT(IN),     TARGET :: pb(*)
+          REAL(C_FLOAT), INTENT(IN),     TARGET :: pc(*)
           ! PROCEDURE(LIBXSMM_FUNCTION6), POINTER :: xmm
           ! CALL C_F_PROCPOINTER(kernel%handle, xmm)
-          ! CALL xmm(a, b, c, pa, pb, pc)
-          CALL libxsmm_xmmcall_prf(kernel%handle, a, b, c, pa, pb, pc)
+          ! CALL xmm(...)
+          CALL libxsmm_xmmcall_prf(kernel%handle,                       &
+     &      C_LOC(a),  C_LOC(b),  C_LOC(c),                             &
+     &      C_LOC(pa), C_LOC(pb), C_LOC(pc))
         END SUBROUTINE
 
-        !> Calls the kernel for the given arguments. Alternatively,
+        !> See also libxsmm_smmcall_abc and libxsmm_smmcall_prf.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_smmcall
+        SUBROUTINE libxsmm_smmcall(kernel, a, b, c, pa, pb, pc)
+          TYPE(LIBXSMM_SMMFUNCTION),       INTENT(IN) :: kernel
+          REAL(C_FLOAT), INTENT(IN),           TARGET ::  a(*), b(*)
+          REAL(C_FLOAT), INTENT(INOUT),        TARGET ::  c(*)
+          REAL(C_FLOAT), INTENT(IN), OPTIONAL, TARGET :: pa(*)
+          REAL(C_FLOAT), INTENT(IN), OPTIONAL, TARGET :: pb(*)
+          REAL(C_FLOAT), INTENT(IN), OPTIONAL, TARGET :: pc(*)
+          ! use .OR. instead of .AND. to avoid full check
+          IF (PRESENT(pa).OR.PRESENT(pb).OR.PRESENT(pc)) THEN
+            CALL libxsmm_xmmcall_prf(kernel%handle,                     &
+     &        C_LOC(a),  C_LOC(b),  C_LOC(c),                           &
+     &        C_LOC(pa), C_LOC(pb), C_LOC(pc))
+          ELSE
+            CALL libxsmm_xmmcall_abc(kernel%handle,                     &
+     &        C_LOC(a), C_LOC(b), C_LOC(c))
+          END IF
+        END SUBROUTINE
+
+        !> Calls the kernel with the given arguments. Alternatively,
         !> PROCPOINTER can be used as shown by the inner comments
-        !> of this routine (LIBXSMM_FUNCTION3/6, etc.). The
-        !> libxsmm_xmmcall routines can be used in FORTRAN77.
-        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_wimmcall_prf
-        SUBROUTINE libxsmm_wimmcall_prf(kernel, a,b,c, pa,pb,pc)
-          TYPE(LIBXSMM_WIMMFUNCTION), INTENT(IN) :: kernel
-          TYPE(C_PTR), INTENT(IN) :: a, b, c, pa, pb, pc
+        !> of this routine (LIBXSMM_FUNCTION3). The libxsmm_xmmcall
+        !> routines can be used in FORTRAN77.
+        SUBROUTINE libxsmm_wimmcall_abc(kernel, a, b, c)
+          TYPE(LIBXSMM_WIMMFUNCTION),  INTENT(IN) :: kernel
+          INTEGER(C_SHORT), INTENT(IN),    TARGET :: a(*), b(*)
+          INTEGER(C_INT),   INTENT(INOUT), TARGET :: c(*)
+          ! PROCEDURE(LIBXSMM_FUNCTION3), POINTER :: xmm
+          ! CALL C_F_PROCPOINTER(kernel%handle, xmm)
+          ! CALL xmm(...)
+          CALL libxsmm_xmmcall_abc(kernel%handle,                       &
+     &      C_LOC(a), C_LOC(b), C_LOC(c))
+        END SUBROUTINE
+
+        !> Calls the kernel with the given arguments. Alternatively,
+        !> PROCPOINTER can be used as shown by the inner comments
+        !> of this routine (LIBXSMM_FUNCTION6). The libxsmm_xmmcall
+        !> routines can be used in FORTRAN77.
+        SUBROUTINE libxsmm_wimmcall_prf(kernel, a, b, c, pa, pb, pc)
+          TYPE(LIBXSMM_WIMMFUNCTION),  INTENT(IN) :: kernel
+          INTEGER(C_SHORT), INTENT(IN),    TARGET ::  a(*), b(*)
+          INTEGER(C_INT),   INTENT(INOUT), TARGET ::  c(*)
+          INTEGER(C_SHORT), INTENT(IN),    TARGET :: pa(*)
+          INTEGER(C_SHORT), INTENT(IN),    TARGET :: pb(*)
+          INTEGER(C_SHORT), INTENT(IN),    TARGET :: pc(*)
           ! PROCEDURE(LIBXSMM_FUNCTION6), POINTER :: xmm
           ! CALL C_F_PROCPOINTER(kernel%handle, xmm)
-          ! CALL xmm(a, b, c, pa, pb, pc)
-          CALL libxsmm_xmmcall_prf(kernel%handle, a, b, c, pa, pb, pc)
+          ! CALL xmm(...)
+          CALL libxsmm_xmmcall_prf(kernel%handle,                       &
+     &      C_LOC(a),  C_LOC(b),  C_LOC(c),                             &
+     &      C_LOC(pa), C_LOC(pb), C_LOC(pc))
         END SUBROUTINE
+
+        !> See also libxsmm_wimmcall_abc and libxsmm_wimmcall_prf.
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_wimmcall
+        SUBROUTINE libxsmm_wimmcall(kernel, a, b, c, pa, pb, pc)
+          TYPE(LIBXSMM_WIMMFUNCTION),         INTENT(IN) :: kernel
+          INTEGER(C_SHORT), INTENT(IN),           TARGET ::  a(*), b(*)
+          INTEGER(C_INT), INTENT(INOUT),          TARGET ::  c(*)
+          INTEGER(C_SHORT), INTENT(IN), OPTIONAL, TARGET :: pa(*)
+          INTEGER(C_SHORT), INTENT(IN), OPTIONAL, TARGET :: pb(*)
+          INTEGER(C_SHORT), INTENT(IN), OPTIONAL, TARGET :: pc(*)
+          ! use .OR. instead of .AND. to avoid full check
+          IF (PRESENT(pa).OR.PRESENT(pb).OR.PRESENT(pc)) THEN
+            CALL libxsmm_xmmcall_prf(kernel%handle,                     &
+     &        C_LOC(a),  C_LOC(b),  C_LOC(c),                           &
+     &        C_LOC(pa), C_LOC(pb), C_LOC(pc))
+          ELSE
+            CALL libxsmm_xmmcall_abc(kernel%handle,                     &
+     &        C_LOC(a), C_LOC(b), C_LOC(c))
+          END IF
+        END SUBROUTINE
+
+        !> Register user-defined key-value; value can be queried (libxsmm_xdispatch).
+        !> Since the key-type is unknown to LIBXSMM, the key must be binary reproducible,
+        !> i.e., the key must be initially zero-filled (libxsmm_xclear) followed by an
+        !> element-wise initialization (some compilers leave padded data uninitialized).
+        !> The size of the key is limited (see documentation). The given value is copied
+        !> by LIBXSMM and may be initialized at registration-time or when received per
+        !> libxsmm_xdispatch. Registered data is released at program termination but can
+        !> be also released if needed (libxsmm_xrelease).
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xregister
+        FUNCTION libxsmm_xregister(key, keysize, valsize, valinit)
+          TYPE(C_PTR), INTENT(IN), VALUE :: key
+          TYPE(C_PTR), INTENT(IN), VALUE, OPTIONAL :: valinit
+          INTEGER(C_INT), INTENT(IN) :: keysize, valsize
+          TYPE(C_PTR) :: libxsmm_xregister
+          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_xregister
+          INTERFACE
+            SUBROUTINE internal_xregister(regval,                       &
+     &      key, keysize, valsize, valinit)                             &
+     &      BIND(C, NAME="libxsmm_xregister_")
+              IMPORT C_PTR, C_INT
+              TYPE(C_PTR), INTENT(OUT) :: regval
+              TYPE(C_PTR), INTENT(IN), VALUE :: key, valinit
+              INTEGER(C_INT), INTENT(IN) :: keysize, valsize
+            END SUBROUTINE
+          END INTERFACE
+          CALL internal_xregister(libxsmm_xregister,                    &
+     &      key, keysize, valsize, valinit)
+        END FUNCTION
+
+        !> Query user-defined value from LIBXSMM's code registry.
+        !> The value's buffer is owned and managed by LIBXSMM
+        !> (can be libxsmm_xrelease'd, .e.g., if larger value
+        !> for the same key must be stored).
+        !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_xdispatch
+        FUNCTION libxsmm_xdispatch(key, keysize)
+          TYPE(C_PTR), INTENT(IN), VALUE :: key
+          INTEGER(C_INT), INTENT(IN) :: keysize
+          TYPE(C_PTR) :: libxsmm_xdispatch
+          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_xdispatch
+          INTERFACE
+            SUBROUTINE internal_xdispatch(regval, key, keysize)         &
+     &      BIND(C, NAME="libxsmm_xdispatch_")
+              IMPORT C_PTR, C_INT
+              TYPE(C_PTR), INTENT(OUT) :: regval
+              TYPE(C_PTR), INTENT(IN), VALUE :: key
+              INTEGER(C_INT), INTENT(IN) :: keysize
+            END SUBROUTINE
+          END INTERFACE
+          CALL internal_xdispatch(libxsmm_xdispatch, key, keysize)
+        END FUNCTION
 
         !> Auto-dispatched general dense MM (double-precision).
         !> This overload belongs to libxsmm_(d)gemm.
@@ -1349,8 +1311,8 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           REAL(C_DOUBLE), INTENT(IN), OPTIONAL :: alpha, beta
-          REAL(C_DOUBLE), INTENT(IN) :: a(:), b(:)
-          REAL(C_DOUBLE), INTENT(INOUT) :: c(:)
+          REAL(C_DOUBLE), INTENT(IN)    :: a(*), b(*)
+          REAL(C_DOUBLE), INTENT(INOUT) :: c(*)
           IF ((0.LT.m).AND.(0.LT.n).AND.(0.LT.k)) THEN
             CALL libxsmm_dgemm0(transa, transb, m, n, k,                &
      &        alpha, a(LBOUND(a,1)), lda,                               &
@@ -1407,7 +1369,7 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           REAL(C_FLOAT), INTENT(IN), OPTIONAL :: alpha, beta
-          REAL(C_FLOAT), INTENT(IN) :: a, b
+          REAL(C_FLOAT), INTENT(IN)    :: a, b
           REAL(C_FLOAT), INTENT(INOUT) :: c
           !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_gemm
           INTERFACE
@@ -1440,8 +1402,8 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           REAL(C_FLOAT), INTENT(IN), OPTIONAL :: alpha, beta
-          REAL(C_FLOAT), INTENT(IN) :: a(:), b(:)
-          REAL(C_FLOAT), INTENT(INOUT) :: c(:)
+          REAL(C_FLOAT), INTENT(IN)    :: a(*), b(*)
+          REAL(C_FLOAT), INTENT(INOUT) :: c(*)
           IF ((0.LT.m).AND.(0.LT.n).AND.(0.LT.k)) THEN
             CALL libxsmm_sgemm0(transa, transb, m, n, k,                &
      &        alpha, a(LBOUND(a,1)), lda,                               &
@@ -1498,7 +1460,7 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           INTEGER(C_INT), INTENT(IN), OPTIONAL :: alpha, beta
-          INTEGER(C_SHORT), INTENT(IN) :: a, b
+          INTEGER(C_SHORT), INTENT(IN)  :: a, b
           INTEGER(C_INT), INTENT(INOUT) :: c
           !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_gemm
           INTERFACE
@@ -1511,9 +1473,9 @@
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: lda
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: ldb
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: ldc
-              INTEGER(C_INT), INTENT(IN) :: alpha, beta
-              INTEGER(C_SHORT), INTENT(IN) :: a, b
-              INTEGER(C_INT), INTENT(INOUT) :: c
+              INTEGER(C_INT),   INTENT(IN)    :: alpha, beta
+              INTEGER(C_SHORT), INTENT(IN)    :: a, b
+              INTEGER(C_INT),   INTENT(INOUT) :: c
             END SUBROUTINE
           END INTERFACE
           CALL internal_gemm(transa, transb, m, n, k,                   &
@@ -1531,8 +1493,8 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           INTEGER(C_INT), INTENT(IN), OPTIONAL :: alpha, beta
-          INTEGER(C_SHORT), INTENT(IN) :: a(:), b(:)
-          INTEGER(C_INT), INTENT(INOUT) :: c(:)
+          INTEGER(C_SHORT), INTENT(IN)    :: a(*), b(*)
+          INTEGER(C_INT),   INTENT(INOUT) :: c(*)
           IF ((0.LT.m).AND.(0.LT.n).AND.(0.LT.k)) THEN
             CALL libxsmm_wigemm0(transa, transb, m, n, k,               &
      &        alpha, a(LBOUND(a,1)), lda,                               &
@@ -1589,7 +1551,7 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           REAL(C_DOUBLE), INTENT(IN), OPTIONAL :: alpha, beta
-          REAL(C_DOUBLE), INTENT(IN) :: a, b
+          REAL(C_DOUBLE), INTENT(IN)    :: a, b
           REAL(C_DOUBLE), INTENT(INOUT) :: c
           !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_gemm
           INTERFACE
@@ -1602,8 +1564,8 @@
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: lda
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: ldb
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: ldc
-              REAL(C_DOUBLE), INTENT(IN) :: alpha, beta
-              REAL(C_DOUBLE), INTENT(IN) :: a, b
+              REAL(C_DOUBLE), INTENT(IN)    :: alpha, beta
+              REAL(C_DOUBLE), INTENT(IN)    :: a, b
               REAL(C_DOUBLE), INTENT(INOUT) :: c
             END SUBROUTINE
           END INTERFACE
@@ -1622,8 +1584,8 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           REAL(C_DOUBLE), INTENT(IN), OPTIONAL :: alpha, beta
-          REAL(C_DOUBLE), INTENT(IN) :: a(:), b(:)
-          REAL(C_DOUBLE), INTENT(INOUT) :: c(:)
+          REAL(C_DOUBLE), INTENT(IN)    :: a(*), b(*)
+          REAL(C_DOUBLE), INTENT(INOUT) :: c(*)
           IF ((0.LT.m).AND.(0.LT.n).AND.(0.LT.k)) THEN
             CALL libxsmm_blas_dgemm0(transa, transb, m, n, k,           &
      &        alpha, a(LBOUND(a,1)), lda,                               &
@@ -1680,7 +1642,7 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           REAL(C_FLOAT), INTENT(IN), OPTIONAL :: alpha, beta
-          REAL(C_FLOAT), INTENT(IN) :: a, b
+          REAL(C_FLOAT), INTENT(IN)    :: a, b
           REAL(C_FLOAT), INTENT(INOUT) :: c
           !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_gemm
           INTERFACE
@@ -1693,8 +1655,8 @@
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: lda
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: ldb
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: ldc
-              REAL(C_FLOAT), INTENT(IN) :: alpha, beta
-              REAL(C_FLOAT), INTENT(IN) :: a, b
+              REAL(C_FLOAT), INTENT(IN)    :: alpha, beta
+              REAL(C_FLOAT), INTENT(IN)    :: a, b
               REAL(C_FLOAT), INTENT(INOUT) :: c
             END SUBROUTINE
           END INTERFACE
@@ -1713,8 +1675,8 @@
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldb
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: ldc
           REAL(C_FLOAT), INTENT(IN), OPTIONAL :: alpha, beta
-          REAL(C_FLOAT), INTENT(IN) :: a(:), b(:)
-          REAL(C_FLOAT), INTENT(INOUT) :: c(:)
+          REAL(C_FLOAT), INTENT(IN)    :: a(*), b(*)
+          REAL(C_FLOAT), INTENT(INOUT) :: c(*)
           IF ((0.LT.m).AND.(0.LT.n).AND.(0.LT.k)) THEN
             CALL libxsmm_blas_sgemm0(transa, transb, m, n, k,           &
      &        alpha, a(LBOUND(a,1)), lda,                               &
@@ -1828,7 +1790,7 @@
         PURE SUBROUTINE libxsmm_itrans(matrix, typesize, m, n, ld)
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m
           INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN), OPTIONAL :: n, ld
-          TYPE(C_PTR), INTENT(IN) :: matrix
+          TYPE(C_PTR),    INTENT(IN) :: matrix
           INTEGER(C_INT), INTENT(IN) :: typesize
           !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_itrans
           INTERFACE
@@ -1836,7 +1798,7 @@
      &      BIND(C, NAME="libxsmm_itrans_")
               IMPORT LIBXSMM_BLASINT_KIND, C_PTR, C_INT
               INTEGER(LIBXSMM_BLASINT_KIND), INTENT(IN) :: m, n, ld
-              TYPE(C_PTR), INTENT(IN), VALUE :: matrix
+              TYPE(C_PTR),    INTENT(IN), VALUE :: matrix
               INTEGER(C_INT), INTENT(IN) :: typesize
             END SUBROUTINE
           END INTERFACE
@@ -1919,217 +1881,113 @@
           CALL internal_shuffle(libxsmm_shuffle, n)
         END FUNCTION
 
-        !> Implicit FORTRAN 77 interface:
-        !> INTEGER(4) :: hash_seed (INOUT)
-        !> CHARACTER  :: key(:)
-        !> INTEGER(4) :: keysize
+        !> Calculates a hash value for the given array and seed.
+        !> FORTRAN 77: see libxsmm_xhash
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_hash_char
         FUNCTION libxsmm_hash_char(key, seed)
-          CHARACTER(C_CHAR), DIMENSION(:), INTENT(IN) :: key
+          CHARACTER(C_CHAR), INTENT(IN) :: key(:)
           INTEGER(C_INT), INTENT(IN) :: seed
           INTEGER(C_INT) :: libxsmm_hash_char
-          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_hash
-          INTERFACE
-            PURE SUBROUTINE internal_hash(hash_seed, key, keysize)      &
-     &      BIND(C, NAME="libxsmm_hash_char_")
-              IMPORT C_INT, C_PTR
-              INTEGER(C_INT), INTENT(INOUT)   :: hash_seed
-              INTEGER(C_INT), INTENT(IN)      :: keysize
-              TYPE(C_PTR), INTENT(IN), VALUE  :: key
-            END SUBROUTINE
-          END INTERFACE
           libxsmm_hash_char = seed
-          CALL internal_hash(libxsmm_hash_char,                         &
-     &      libxsmm_ptr1(key), SIZE(key))
+          CALL libxsmm_xhash(libxsmm_hash_char,                         &
+     &      libxsmm_ptr(key), SIZE(key))
         END FUNCTION
 
-        !> Implicit FORTRAN 77 interface:
-        !> INTEGER(4) :: hash_seed (INOUT)
-        !> INTEGER(1) :: key(:)
-        !> INTEGER(4) :: keysize
+        !> Calculates a hash value for the given array and seed.
+        !> FORTRAN 77: see libxsmm_xhash
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_hash_i8
         FUNCTION libxsmm_hash_i8(key, seed)
-          INTEGER(C_INT8_T), DIMENSION(:), INTENT(IN) :: key
+          INTEGER(C_INT8_T), INTENT(IN) :: key(:)
           INTEGER(C_INT), INTENT(IN) :: seed
           INTEGER(C_INT) :: libxsmm_hash_i8
-          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_hash
-          INTERFACE
-            PURE SUBROUTINE internal_hash(hash_seed, key, keysize)      &
-     &      BIND(C, NAME="libxsmm_hash_i8_")
-              IMPORT C_INT, C_PTR
-              INTEGER(C_INT), INTENT(INOUT)   :: hash_seed
-              INTEGER(C_INT), INTENT(IN)      :: keysize
-              TYPE(C_PTR), INTENT(IN), VALUE  :: key
-            END SUBROUTINE
-          END INTERFACE
           libxsmm_hash_i8 = seed
-          CALL internal_hash(libxsmm_hash_i8,                           &
-     &      libxsmm_ptr1(key), SIZE(key))
+          CALL libxsmm_xhash(libxsmm_hash_i8,                           &
+     &      libxsmm_ptr(key), SIZE(key))
         END FUNCTION
 
-        !> Implicit FORTRAN 77 interface:
-        !> INTEGER(4) :: hash_seed (INOUT)
-        !> INTEGER(4) :: key(:)
-        !> INTEGER(4) :: keysize
+        !> Calculates a hash value for the given array and seed.
+        !> FORTRAN 77: see libxsmm_xhash
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_hash_i32
         FUNCTION libxsmm_hash_i32(key, seed)
-          INTEGER(C_INT), DIMENSION(:), INTENT(IN) :: key
+          INTEGER(C_INT), INTENT(IN) :: key(:)
           INTEGER(C_INT), INTENT(IN) :: seed
           INTEGER(C_INT) :: libxsmm_hash_i32
-          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_hash
-          INTERFACE
-            PURE SUBROUTINE internal_hash(hash_seed, key, keysize)      &
-     &      BIND(C, NAME="libxsmm_hash_i32_")
-              IMPORT C_INT, C_PTR
-              INTEGER(C_INT), INTENT(INOUT)   :: hash_seed
-              INTEGER(C_INT), INTENT(IN)      :: keysize
-              TYPE(C_PTR), INTENT(IN), VALUE  :: key
-            END SUBROUTINE
-          END INTERFACE
           libxsmm_hash_i32 = seed
-          CALL internal_hash(libxsmm_hash_i32,                          &
-     &      libxsmm_ptr1(key), SIZE(key) * 4)
+          CALL libxsmm_xhash(libxsmm_hash_i32,                          &
+     &      libxsmm_ptr(key), SIZE(key) * 4)
         END FUNCTION
 
-        !> Implicit FORTRAN 77 interface:
-        !> INTEGER(4) :: hash_seed (INOUT)
-        !> INTEGER(8) :: key(:)
-        !> INTEGER(4) :: keysize
+        !> Calculates a hash value for the given array and seed.
+        !> FORTRAN 77: see libxsmm_xhash
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_hash_i64
         FUNCTION libxsmm_hash_i64(key, seed)
-          INTEGER(C_LONG_LONG), DIMENSION(:), INTENT(IN) :: key
+          INTEGER(C_LONG_LONG), INTENT(IN) :: key(:)
           INTEGER(C_INT), INTENT(IN) :: seed
           INTEGER(C_INT) :: libxsmm_hash_i64
-          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_hash
-          INTERFACE
-            PURE SUBROUTINE internal_hash(hash_seed, key, keysize)      &
-     &      BIND(C, NAME="libxsmm_hash_i64_")
-              IMPORT C_INT, C_PTR
-              INTEGER(C_INT), INTENT(INOUT)   :: hash_seed
-              INTEGER(C_INT), INTENT(IN)      :: keysize
-              TYPE(C_PTR), INTENT(IN), VALUE  :: key
-            END SUBROUTINE
-          END INTERFACE
           libxsmm_hash_i64 = seed
-          CALL internal_hash(libxsmm_hash_i64,                          &
-     &      libxsmm_ptr1(key), SIZE(key) * 8)
+          CALL libxsmm_xhash(libxsmm_hash_i64,                          &
+     &      libxsmm_ptr(key), SIZE(key) * 8)
         END FUNCTION
 
-        !> Implicit FORTRAN 77 interface:
-        !> INTEGER(4) :: memcmp (OUT)
-        !> CHARACTER  :: a(:), b(:)
-        !> INTEGER(8) :: nbytes
+        !> Calculates if there is a difference between two arrays.
+        !> FORTRAN 77: see libxsmm_xdiff
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_diff_char
         FUNCTION libxsmm_diff_char(a, b)
-          CHARACTER(C_CHAR), DIMENSION(:), INTENT(IN) :: a, b
-          LOGICAL :: libxsmm_diff_char
-          INTEGER(C_INT) :: memcmp
-          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_diff
-          INTERFACE
-            PURE SUBROUTINE internal_diff(memcmp, a, b, nbytes)         &
-     &      BIND(C, NAME="libxsmm_diff_char_")
-              IMPORT C_LONG_LONG, C_INT, C_PTR
-              TYPE(C_PTR), INTENT(IN), VALUE    :: a, b
-              INTEGER(C_LONG_LONG), INTENT(IN)  :: nbytes
-              INTEGER(C_INT), INTENT(OUT)       :: memcmp
-            END SUBROUTINE
-          END INTERFACE
+          CHARACTER(C_CHAR), INTENT(IN) :: a(:), b(:)
+          LOGICAL(C_BOOL) :: libxsmm_diff_char
           IF (SIZE(a, KIND=C_LONG_LONG) .EQ. SIZE(b, KIND=C_LONG_LONG)) &
      &    THEN
-            CALL internal_diff(memcmp,                                  &
-     &        libxsmm_ptr1(a), libxsmm_ptr1(b),                         &
-     &        SIZE(a, KIND=C_LONG_LONG) * 4)
-            libxsmm_diff_char = 0.NE.memcmp
+            CALL libxsmm_xdiff(libxsmm_diff_char,                       &
+     &        libxsmm_ptr(a), libxsmm_ptr(b),                           &
+     &        SIZE(a, KIND=C_LONG_LONG))
           ELSE
             libxsmm_diff_char = .TRUE.
           END IF
         END FUNCTION
 
-        !> Implicit FORTRAN 77 interface:
-        !> INTEGER(4) :: memcmp (OUT)
-        !> INTEGER(1) :: a(:), b(:)
-        !> INTEGER(8) :: nbytes
+        !> Calculates if there is a difference between two arrays.
+        !> FORTRAN 77: see libxsmm_xdiff
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_diff_i8
         FUNCTION libxsmm_diff_i8(a, b)
-          INTEGER(C_INT8_T), DIMENSION(:), INTENT(IN) :: a, b
-          LOGICAL :: libxsmm_diff_i8
-          INTEGER(C_INT) :: memcmp
-          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_diff
-          INTERFACE
-            PURE SUBROUTINE internal_diff(memcmp, a, b, nbytes)         &
-     &      BIND(C, NAME="libxsmm_diff_i8_")
-              IMPORT C_LONG_LONG, C_INT, C_PTR
-              TYPE(C_PTR), INTENT(IN), VALUE    :: a, b
-              INTEGER(C_LONG_LONG), INTENT(IN)  :: nbytes
-              INTEGER(C_INT), INTENT(OUT)       :: memcmp
-            END SUBROUTINE
-          END INTERFACE
+          INTEGER(C_INT8_T), INTENT(IN) :: a(:), b(:)
+          LOGICAL(C_BOOL) :: libxsmm_diff_i8
           IF (SIZE(a, KIND=C_LONG_LONG) .EQ. SIZE(b, KIND=C_LONG_LONG)) &
      &    THEN
-            CALL internal_diff(memcmp,                                  &
-     &        libxsmm_ptr1(a), libxsmm_ptr1(b),                         &
+            CALL libxsmm_xdiff(libxsmm_diff_i8,                         &
+     &        libxsmm_ptr(a), libxsmm_ptr(b),                           &
      &        SIZE(a, KIND=C_LONG_LONG))
-            libxsmm_diff_i8 = 0.NE.memcmp
           ELSE
             libxsmm_diff_i8 = .TRUE.
           END IF
         END FUNCTION
 
-        !> Implicit FORTRAN 77 interface:
-        !> INTEGER(4) :: memcmp (OUT)
-        !> INTEGER(4) :: a(:), b(:)
-        !> INTEGER(8) :: nbytes
+        !> Calculates if there is a difference between two arrays.
+        !> FORTRAN 77: see libxsmm_xdiff
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_diff_i32
         FUNCTION libxsmm_diff_i32(a, b)
-          INTEGER(C_INT), DIMENSION(:), INTENT(IN) :: a, b
-          LOGICAL :: libxsmm_diff_i32
-          INTEGER(C_INT) :: memcmp
-          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_diff
-          INTERFACE
-            PURE SUBROUTINE internal_diff(memcmp, a, b, nbytes)         &
-     &      BIND(C, NAME="libxsmm_diff_i32_")
-              IMPORT C_LONG_LONG, C_INT, C_PTR
-              TYPE(C_PTR), INTENT(IN), VALUE    :: a, b
-              INTEGER(C_LONG_LONG), INTENT(IN)  :: nbytes
-              INTEGER(C_INT), INTENT(OUT)       :: memcmp
-            END SUBROUTINE
-          END INTERFACE
+          INTEGER(C_INT), INTENT(IN) :: a(:), b(:)
+          LOGICAL(C_BOOL) :: libxsmm_diff_i32
           IF (SIZE(a, KIND=C_LONG_LONG) .EQ. SIZE(b, KIND=C_LONG_LONG)) &
      &    THEN
-            CALL internal_diff(memcmp,                                  &
-     &        libxsmm_ptr1(a), libxsmm_ptr1(b),                         &
+            CALL libxsmm_xdiff(libxsmm_diff_i32,                        &
+     &        libxsmm_ptr(a), libxsmm_ptr(b),                           &
      &        SIZE(a, KIND=C_LONG_LONG) * 4)
-            libxsmm_diff_i32 = 0.NE.memcmp
           ELSE
             libxsmm_diff_i32 = .TRUE.
           END IF
         END FUNCTION
 
-        !> Implicit FORTRAN 77 interface:
-        !> INTEGER(4) :: memcmp (OUT)
-        !> INTEGER(8) :: a(:), b(:)
-        !> INTEGER(8) :: nbytes
+        !> Calculates if there is a difference between two arrays.
+        !> FORTRAN 77: see libxsmm_xdiff
         !DIR$ ATTRIBUTES OFFLOAD:MIC :: libxsmm_diff_i64
         FUNCTION libxsmm_diff_i64(a, b)
-          INTEGER(C_LONG_LONG), DIMENSION(:), INTENT(IN) :: a, b
-          LOGICAL :: libxsmm_diff_i64
-          INTEGER(C_INT) :: memcmp
-          !DIR$ ATTRIBUTES OFFLOAD:MIC :: internal_diff
-          INTERFACE
-            PURE SUBROUTINE internal_diff(memcmp, a, b, nbytes)         &
-     &      BIND(C, NAME="libxsmm_diff_i64_")
-              IMPORT C_LONG_LONG, C_INT, C_PTR
-              TYPE(C_PTR), INTENT(IN), VALUE    :: a, b
-              INTEGER(C_LONG_LONG), INTENT(IN)  :: nbytes
-              INTEGER(C_INT), INTENT(OUT)       :: memcmp
-            END SUBROUTINE
-          END INTERFACE
+          INTEGER(C_LONG_LONG), INTENT(IN) :: a(:), b(:)
+          LOGICAL(C_BOOL) :: libxsmm_diff_i64
           IF (SIZE(a, KIND=C_LONG_LONG) .EQ. SIZE(b, KIND=C_LONG_LONG)) &
      &    THEN
-            CALL internal_diff(memcmp,                                  &
-     &        libxsmm_ptr1(a), libxsmm_ptr1(b),                         &
+            CALL libxsmm_xdiff(libxsmm_diff_i64,                        &
+     &        libxsmm_ptr(a), libxsmm_ptr(b),                           &
      &        SIZE(a, KIND=C_LONG_LONG) * 8)
-            libxsmm_diff_i64 = 0.NE.memcmp
           ELSE
             libxsmm_diff_i64 = .TRUE.
           END IF

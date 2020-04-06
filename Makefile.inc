@@ -47,24 +47,26 @@ ifeq (d,$(filter d,$(MAKEFLAGS)))
   SHELL += -xv
 endif
 
+which = $(shell which $1 2>/dev/null)
+which ?= $(shell command -v $1)
+
 ifeq (Windows_NT,$(OS))
   UNAME ?= Windows_NT
-  ENV ?= $(NULL)
   # Cygwin/MinGW based
   DLIBEXT ?= dll
   SLIBEXT ?= lib
+else
+  UNAME ?= $(shell uname)
+  ifneq (Darwin,$(UNAME))
+    ENVBIN ?= $(call which,env)
+  endif
 endif
-
-which = $(shell which $1 2>/dev/null)
-which ?= $(shell command -v $1)
 
 # Command line utilities
 #PKGCFG ?= $(call which,pkg-config)
 CP ?= $(call which,cp)
 MV ?= $(call which,mv)
-UNAME ?= $(shell uname)
 MAKE ?= make
-ENV ?= env
 
 # Python interpreter per PYTHON=/path/to/python
 PYTHON3 ?= $(call which,python3)
@@ -72,7 +74,7 @@ PYTHON ?= $(call which,python)
 
 ifeq (,$(PYTHON))
 ifneq (,$(PYTHON3))
-  SHELL := $(ENV) PATH=$(MAKEINC):$(PATH) $(SHELL)
+  SHELL := $(ENVBIN) PATH=$(MAKEINC):$(PATH) $(SHELL)
   PYTHON = $(shell ln -s $(PYTHON3) $(MAKEINC)/python 2>/dev/null; command -v python)
 endif
 endif
@@ -107,10 +109,9 @@ TRACE ?= 0
 ifeq (0,$(DBG))
   ifneq (0,$(INSTRUMENT))
     SYM = $(INSTRUMENT)
-  else ifeq (0,$(shell echo "$$((0>$(SYM)))"))
+  endif
+  ifeq (0,$(shell echo "$$((1<$(SYM) || 0>$(SYM)))"))
     DFLAGS += -DNDEBUG
-  else
-    DFLAGS += -D_DEBUG
   endif
 else # debugging enabled
   ifneq (0,$(shell echo "$$((1<$(DBG) || 0>$(DBG)))"))
@@ -153,7 +154,7 @@ STATIC ?= 0
 PIC ?= pic
 
 PLATFORM ?= 0
-ifneq (0,$(PLATFORM))
+ifneq (0,$(shell echo "$(PLATFORM)" | grep "^-*[0-9][0-9]*$$" || echo "0")) # NaN
   DFLAGS += -DLIBXSMM_PLATFORM_FORCE
 endif
 
@@ -260,9 +261,17 @@ HOMEDIR := $(call qapath,$(HOME))
 HEREDIR := $(call qapath,.)
 
 # Pickup OpenMP library name if passed as OMP=libname|name
-ifneq (0,$(shell echo "$(OMP)" | grep -q "^-*[0-9]\+$$"; echo "$$?")) # NaN
+ifneq (0,$(shell echo "$(OMP)" | grep -q "^-*[0-9][0-9]*$$"; echo "$$?")) # NaN
   OMPRT = $(patsubst lib%,%,$(OMP))
 endif
+
+uniqadd = $(filter-out $($2),$($1)) $(if $3,$3,$($2))
+uniqmov = $(if $(filter $($2),$($1)),$(call uniqadd,$1,$2,$3),$($1))
+ctest = $(if $(shell INFILE=$$($(MKTEMP) /tmp/.libxsmm_XXXXXX.c) && \
+  echo "int main(void) { return 0; }" > $${INFILE} && \
+  $1 $2 $${INFILE} -o $${INFILE}.x 2>/dev/null >/dev/null && echo "OK"; \
+  rm -f /tmp/$$(basename $${INFILE} .c).* .libxsmm_??????.* 2>/dev/null),$2)
+ldlib = $(if $1,$(call ctest,$1 $2,-l$3))
 
 ifneq (0,$(PYMOD))
   ifneq (,$(PYTHON))
@@ -606,14 +615,6 @@ ifneq (,$(CCAR))
   endif
 endif
 
-uniqadd = $(filter-out $($2),$($1)) $(if $3,$3,$($2))
-uniqmov = $(if $(filter $($2),$($1)),$(call uniqadd,$1,$2,$3),$($1))
-ctest = $(if $(shell INFILE=$$($(MKTEMP) /tmp/.libxsmm_XXXXXX.c) && \
-  echo "int main(void) { return 0; }" > $${INFILE} && \
-  $1 $2 $${INFILE} -o $${INFILE}.x 2>/dev/null >/dev/null && echo "OK"; \
-  rm -f /tmp/$$(basename $${INFILE} .c).* .libxsmm_??????.* 2>/dev/null),$2)
-ldlib = $(call ctest,$1 $2,-l$3)
-
 ifneq (,$(FORCE_CXX))
 ifneq (0,$(FORCE_CXX))
   override CC := $(CXX) $(call ctest,$(CC),-xc++)
@@ -915,18 +916,13 @@ absliblpath = $(strip $(if $1, \
   $(if $(findstring .$(ILIBEXT),$1),-L$(call qdir,$(call qapath,$1)))))
 
 ifneq (0,$(ABSLIBS))
-#ifeq (0,$(DEPSTATIC))
   abslibpath = $(strip $(call abslibrpath,$1) $(call absliblpath,$1))
-#endif
 endif
 abslibpath ?= $(call absliblpath,$1)
 
-libpath = $(strip $(if $1, \
-  $(if $(call ldlib,$1,$2,$3),$(shell $1 $2 -l$3 $(call linkopt,$(XLNKVERBOSE)) 2>&1 \
-    | grep "lib$3" | sed "s/[^./]\(\.*\/..*[^[:space:]$(CHAR_CLOSE)]\).*/$(CHAR_HASH)\1/" \
-    | rev | cut -d$(CHAR_HASH) -f1 | rev \
-    | sed -n "s/[[:space:]]*\(\.*\/..*\)\([[:space:]]..*\)*/\1/p" \
-    | xargs -I {} sh -c "if [ -f '{}' ]; then echo '{}'; fi" | tail -n1))))
+libpath = $(strip $(if $1,$(shell $1 $2 -l$3 $(call linkopt,$(XLNKVERBOSE)) 2>&1 \
+    | grep "lib$3" | tr " " "\n" | sed -n "/\//p" | sed "s/[$(CHAR_OPEN)]\(..*\)[$(CHAR_CLOSE)]/\1/" \
+    | xargs -I {} sh -c "if [ -f '{}' ]; then echo '{}'; else ls -1 {}.* 2>/dev/null; fi" | tail -n1)))
 
 ifneq (Windows_NT1,$(OS)$(DEPSTATIC))
   abslibfile = $(strip $(if $(findstring .$(ILIBEXT),$1), \
@@ -1181,12 +1177,6 @@ ifneq (0,$(INTEL))
       FCFLAGS += -check
     endif
   endif
-  ifneq (0,$(INSTRUMENT))
-    CXXFLAGS += -finstrument-functions
-    CFLAGS += -finstrument-functions
-    FCFLAGS += -finstrument-functions
-    DFLAGS += -D__TRACE=$(INSTRUMENT)
-  endif
   ifneq (0,$(shell echo "$$((3>$(DBG)))"))
     ifeq (0,$(COMPATIBLE))
     ifneq (,$(filter environment% override command%,$(origin COMPATIBLE)))
@@ -1344,7 +1334,7 @@ else # GCC assumed
       CXXFLAGS += -fno-asynchronous-unwind-tables
       FCFLAGS += -fno-asynchronous-unwind-tables
       CFLAGS += -fno-asynchronous-unwind-tables
-      ifeq (0,$(PEDANTIC))
+      ifneq (,$(filter 0 1,$(PEDANTIC)))
         CFLAGS += -Wno-format
       endif
     endif
@@ -1411,24 +1401,6 @@ else # GCC assumed
       endif
     endif
   endif
-  ifneq (0,$(INSTRUMENT))
-    DFLAGS += -D__TRACE=$(INSTRUMENT)
-    ifeq (0,$(PGI))
-      CXXFLAGS += -finstrument-functions
-      CFLAGS += -finstrument-functions
-      FCFLAGS += -finstrument-functions
-      # e.g. clang does not need/understand below flag
-      ifneq (0,$(shell echo "$$((40300<=$(GCC_VERSION_NUM)))"))
-        CFLAGS += -finstrument-functions-exclude-function-list=_mm_,_mm256_,_mm512_,__rdtsc
-        ifneq (,$(filter 2 3,$(GCC)))
-          CXXFLAGS += -finstrument-functions-exclude-function-list=_mm_,_mm256_,_mm512_,__rdtsc
-          ifeq (3,$(GCC))
-            FCFLAGS += -finstrument-functions-exclude-function-list=_mm_,_mm256_,_mm512_,__rdtsc
-          endif
-        endif
-      endif
-    endif
-  endif
   ifeq (Windows_NT,$(UNAME))
     LDFLAGS += $(XLIB_BEGIN) $(call ldlib,$(LD),$(SLDFLAGS),dbghelp) $(XLIB_END)
   else ifeq (FreeBSD,$(UNAME))
@@ -1480,7 +1452,7 @@ else # GCC assumed
   ifneq (,$(OMPFLAG_FORCE))
     ifneq (,$(OMPLIBFILE))
       # clang: OMP=libomp
-      ifneq (0,$(shell echo "$(OMP)" | grep -q "^-*[0-9]\+$$"; echo "$$?")) # NaN
+      ifneq (0,$(shell echo "$(OMP)" | grep -q "^-*[0-9][0-9]*$$"; echo "$$?")) # NaN
         ifneq (0,$(CLANG))
           CXXLDFLAGS += $(call absliblpath,$(OMPLIBFILE))
           CLDFLAGS += $(call absliblpath,$(OMPLIBFILE))
@@ -1674,6 +1646,28 @@ endif
 
 ifeq (0,$(SYM))
   LDFLAGS += $(call ctest,$(LD),-s)
+endif
+
+ifneq (0,$(INSTRUMENT))
+ifneq (Darwin1,$(UNAME)$(INSTRUMENT))
+  DFLAGS += -D__TRACE=$(INSTRUMENT)
+  ifeq (0,$(PGI))
+    CXXFLAGS += -finstrument-functions $(call ctest,$(CXX),-fno-partial-inlining) $(call ctest,$(CXX),-fno-optimize-sibling-calls)
+    CFLAGS += -finstrument-functions $(call ctest,$(CC),-fno-partial-inlining) $(call ctest,$(CC),-fno-optimize-sibling-calls)
+    FCFLAGS += -finstrument-functions $(call ctest,$(FC),-fno-partial-inlining) $(call ctest,$(FC),-fno-optimize-sibling-calls)
+    ifeq (0,$(INTEL)) # e.g. Intel, Clang, and others do not need/understand below flag
+    ifneq (0,$(shell echo "$$((40300<=$(GCC_VERSION_NUM)))"))
+      CFLAGS += -finstrument-functions-exclude-function-list=_mm_,_mm256_,_mm512_,__rdtsc
+      ifneq (,$(filter 2 3,$(GCC)))
+        CXXFLAGS += -finstrument-functions-exclude-function-list=_mm_,_mm256_,_mm512_,__rdtsc
+        ifeq (3,$(GCC))
+          FCFLAGS += -finstrument-functions-exclude-function-list=_mm_,_mm256_,_mm512_,__rdtsc
+        endif
+      endif
+    endif
+    endif
+  endif
+endif
 endif
 
 ifeq (0,$(COMPATIBLE))
@@ -2221,13 +2215,13 @@ objname = $(foreach ARG,$(1),$(addprefix $(BLDDIR)/,$(patsubst %$(call qsuffix,$
 STATE := $(foreach V,$(sort $(.VARIABLES)),$(if \
   $(filter-out environment% default automatic,$(origin $V)), \
   $(if $(filter-out $(EXCLUDE_STATE) EXCLUDE_% .% _% MAKE_% HAVE_% LIB_% %STATE MAKEFILE_LIST MAKEOVERRIDES MAKEFLAGS SHELL BLDDIR REVERSION% AVX \
-    COMPILER_VERSION_FLAG CC_VERSION_% CXX_VERSION_% FC_VERSION_% GCC_VERSION_% CINFO CP DEPDIR DFLAGS FINFO SSE ENV EXTDEP FORTDEP FSTD GINFO \
+    COMPILER_VERSION_FLAG CC_VERSION_% CXX_VERSION_% FC_VERSION_% GCC_VERSION_% CINFO CP DEPDIR DFLAGS FINFO SSE ENVBIN EXTDEP FORTDEP FSTD GINFO \
     DLIBEXT DYNAMIC FLOCK LIBEXT ICX ILIBEXT LIBNAME LICFILE MAKEINC MV ROOTDIR SLIBEXT XLNK% CHAR_OPEN CHAR_CLOSE CHAR_HASH MKTEMP OMPLIBFILE \
     CPEDANTIC FREEFORM FFORM_FLAG FORTLIB FIXFC INCDIR OUTDIR SRCDIR XLIB_% GFC CLANG INTEL CRAY GCC GCCBIN FMFLAGS FCLDFLAGS EXTLIB PYTHON% \
     GNU CCAR CLDFLAGS LIBGFORTRAN PGI FPEDANTIC FWARNEXTRA XGROUP_BEGIN XGROUP_END SLDFLAGS PICFLAG PIC OPTFLAG OPT OMPFLAG_FORCE FORCE_CXX \
     NOBLAS% DNOBLAS MAINLIB FLDFLAGS OPSYS LIBDEP LIBFIND LIBDL LIBRT LIBM LIBCPP BLAS_FLAGS BLAS_LDFLAGS BLAS_THREADS SUITE PEDANTIC CMAIN \
     LIBPTHREAD CSTD CWARNEXTRA OMPTEST QUADMATH BLASDIR BLASLIBEXT BLASTEST NO_OFFLOAD_FLAG FYPPEXE INCLUDEMAKE LIBDIR OBJDIR ONEVERSION \
-    HEREDIR HOMEDIR UNUSED TESTSIZE SHARED PYMOD MINGW FMAIN VERSION \
+    HEREDIR HOMEDIR UNUSED TESTSIZE SHARED PYMOD MINGW FMAIN VERSION ACC% \
     abslib applyif uniqadd uniqmov ldlib which cleanup cleanld linkopt abslibfile abslibpath absliblpath abslibrpath libpath solink \
     ctest extname objname unquote quote qapath qndir qdir qsuffix qbname qname \
     BLAS_INCFILE $(if $(filter 0,$(MKL)),MKL_%) $(if $(filter 0,$(TBB)),TBB_%) \

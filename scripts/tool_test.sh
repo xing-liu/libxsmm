@@ -21,7 +21,7 @@ SYNC=$(command -v sync)
 GREP=$(command -v grep)
 WGET=$(command -v wget)
 GIT=$(command -v git)
-SED=$(command -v sed)
+SED=$(command -v gsed)
 CUT=$(command -v cut)
 LS=$(command -v ls)
 TR=$(command -v tr)
@@ -32,7 +32,12 @@ MKTEMP=${HERE}/../.mktmp.sh
 RUN_CMD="--session-command"
 #RUN_CMD="-c"
 
-if [ "" != "${WGET}" ] && [ "" != "${PIPELINE}" ] && \
+# GNU sed is desired (macOS)
+if [ "" = "${SED}" ]; then
+  SED=$(command -v sed)
+fi
+
+if [ "" != "${WGET}" ] && [ "" != "${SED}" ] && [ "" != "${PIPELINE}" ] && \
    [ "" != "${BUILDKITE_ORGANIZATION_SLUG}" ] && \
    [ "" != "${BUILDKITE_AGENT_ACCESS_TOKEN}" ];
 then
@@ -60,7 +65,7 @@ then
   fi
 
   # set the case number
-  if [ "" != "$1" ] && [ -e $1 ]; then
+  if [ "" != "$1" ] && [ -e "$1" ]; then
     export TESTSETFILE=$1
     if [ "" != "${BASENAME}" ]; then
       export TESTID=$(${BASENAME} ${TESTSETFILE%.*})
@@ -68,8 +73,8 @@ then
       export TESTID=${TESTSETFILE}
     fi
     export TESTSET=${TESTID}
-  else
-    if [ "" != "$1" ]; then
+  else # case number given
+    if [ "" != "$1" ] && [ "0" != "$1" ]; then
       export TESTID=$1
     else
       export TESTID=1
@@ -87,7 +92,9 @@ then
   if [ "" = "${TRAVIS_OS_NAME}" ] && [ "" != "${UNAME}" ]; then
     export TRAVIS_OS_NAME=$(${UNAME})
   fi
-  HOST=$(hostname -s 2>/dev/null)
+  if [ "" = "${HOSTNAME}" ]; then
+    HOSTNAME=$(hostname -s 2>/dev/null)
+  fi
 
   # setup PARTITIONS for multi-tests
   if [ "" = "${PARTITIONS}" ]; then
@@ -133,11 +140,11 @@ then
     TESTSET=travis
   fi
   if [ "" = "${TESTSETFILE}" ] || [ ! -e ${TESTSETFILE} ]; then
-    if [ -e .${TESTSET}.yml ]; then
+    if [ -e ".${TESTSET}.yml" ]; then
       TESTSETFILE=.${TESTSET}.yml
-    elif [ -e ${TESTSET}.yml ]; then
+    elif [ -e "${TESTSET}.yml" ]; then
       TESTSETFILE=${TESTSET}.yml
-    elif [ -e ${TESTSET} ]; then
+    elif [ -e "${TESTSET}" ]; then
       TESTSETFILE=${TESTSET}
     else
       echo "ERROR: Cannot find file with test set!"
@@ -165,17 +172,18 @@ then
       # convert: seconds -> minutes
       SRUN_FLAGS="${SRUN_FLAGS} --time=$((LIMITRUN/60))"
     fi
+    #SRUN_FLAGS="${SRUN_FLAGS} --preserve-env"
     umask 007
     # eventually cleanup run-script of terminated/previous sessions
     ${RM} -f "${HERE}/../.tool_??????.sh"
     TESTSCRIPT=$(${MKTEMP} ${HERE}/../.tool_XXXXXX.sh)
     ${CHMOD} +rx ${TESTSCRIPT}
     LAUNCH="${SRUN} --ntasks=1 --partition=\${PARTITION} ${SRUN_FLAGS} \
-                    --preserve-env --unbuffered ${TESTSCRIPT}"
+                    --unbuffered ${TESTSCRIPT}"
   elif [ "" != "${SLURMSCRIPT}" ] && [ "0" != "${SLURMSCRIPT}" ]; then
     umask 007
     # eventually cleanup run-script of terminated/previous sessions
-    ${RM} -f ${HERE}/../.tool_??????.sh
+    ${RM} -f "${HERE}/../.tool_??????.sh"
     TESTSCRIPT=$(${MKTEMP} ${HERE}/../.tool_XXXXXX.sh)
     ${CHMOD} +rx ${TESTSCRIPT}
     LAUNCH="${TESTSCRIPT}"
@@ -193,6 +201,7 @@ then
   # backup current environment (snapshot)
   ${RM} -f "${HERE}/../.env_??????"
   ENVFILE=$(${MKTEMP} ${HERE}/../.env_XXXXXX)
+  ${CHMOD} +r ${ENVFILE}
   declare -px > ${ENVFILE}
 
   RESULT=0
@@ -216,7 +225,7 @@ then
     elif [ -e "${TEST}" ]; then
       SLURMFILE=${TEST}
     fi
-    if [ "none" = "${PARTITIONS}" ] && [ "$0" != "${SLURMFILE}" ] && [ -e ${SLURMFILE} ]; then
+    if [ "none" = "${PARTITIONS}" ] && [ "$0" != "${SLURMFILE}" ] && [ -e "${SLURMFILE}" ]; then
       PARTITION=$(${SED} -n "s/^#SBATCH[[:space:]][[:space:]]*\(--partition=\|-p\)\(..*\)/\2/p" ${SLURMFILE})
       if [ "" != "${PARTITION}" ]; then PARTITIONS=${PARTITION}; fi
     fi
@@ -237,7 +246,7 @@ then
           LIMITFILE=${REPOROOT}/${LIMITBASE}${LIMITFILE}
         fi
       fi
-      if [ "" != "${LIMITFILE}" ] && [ -e ${LIMITFILE} ]; then
+      if [ "" != "${LIMITFILE}" ] && [ -e "${LIMITFILE}" ]; then
         OLD=$(stat -c %Y ${LIMITFILE})
       else # ensure build is not skipped
         OLD=${NOW}
@@ -258,31 +267,20 @@ then
     for CONFIG in ${CONFIGS}; do
     # make execution environment locally available (always)
     CONFIGFILE=""
-    if [ "" != "${HOST}" ] && [ "none" != "${CONFIG}" ]; then
+    if [ "" != "${HOSTNAME}" ] && [ "none" != "${CONFIG}" ]; then
       CONFIGPAT=$(echo "${CONFIGEX}" | ${SED} "s/[[:space:]][[:space:]]*/\\\|/g" | ${SED} "s/\\\|$//")
       if [ "" != "${CONFIGPAT}" ]; then
-        CONFIGFILES=($(bash -c "ls -1 ${REPOROOT}/.env/${HOST}/${CONFIG}.env 2>/dev/null" | ${SED} "/\(${CONFIGPAT}\)/d"))
+        CONFIGFILES=($(bash -c "ls -1 ${REPOROOT}/.env/${HOSTNAME}/${CONFIG}.env 2>/dev/null" | ${SED} "/\(${CONFIGPAT}\)/d"))
       else
-        CONFIGFILES=($(bash -c "ls -1 ${REPOROOT}/.env/${HOST}/${CONFIG}.env 2>/dev/null"))
+        CONFIGFILES=($(bash -c "ls -1 ${REPOROOT}/.env/${HOSTNAME}/${CONFIG}.env 2>/dev/null"))
       fi
       CONFIGCOUNT=${#CONFIGFILES[@]}
       if [ "0" != "${CONFIGCOUNT}" ]; then
-        # no need to have unique values in ENVDIFF aka "sort -u"
-        ENVDIFF=$(declare -px | ${DIFF} ${ENVFILE} - | ${SED} -n 's/[<>] \(..*\)/\1/p' | ${SED} -n 's/declare -x \(..*\)=..*/\1/p')
-        # restore environment
-        for ENV in ${ENVDIFF}; do
-          ENVVAR=$(${GREP} "declare \-x ${ENV}=" ${ENVFILE})
-          if [ "" != "${ENVVAR}" ]; then
-            eval ${ENVVAR}
-          else
-            unset ${ENV}
-          fi
-        done
         CONFIGFILE=${CONFIGFILES[RANDOM%CONFIGCOUNT]}
         CONFIG=$(${BASENAME} ${CONFIGFILE} .env)
-        source "${CONFIGFILE}" ""
       else
         echo "WARNING: configuration \"${CONFIG}\" not found!"
+        CONFIGFILE=""
       fi
     fi
     for ENV in ${ENVS}; do
@@ -305,23 +303,27 @@ then
         fi
       fi
       # prepare temporary script for remote environment/execution
-      if [ "" != "${TESTSCRIPT}" ] && [ -e ${TESTSCRIPT} ]; then
+      if [ "" != "${TESTSCRIPT}" ] && [ -e "${TESTSCRIPT}" ]; then
         echo "#!/usr/bin/env bash" > ${TESTSCRIPT}
         echo "set -eo pipefail" >> ${TESTSCRIPT}
         echo "if [ \"\" = \"\${MAKEJ}\" ]; then MAKEJ=\"-j \$(eval ${HERE}/tool_cpuinfo.sh -nc)\"; fi" >> ${TESTSCRIPT}
         # make execution environment available
-        if [ "" != "${CONFIGFILE}" ]; then
-          LICSDIR=$(command -v icc | ${SED} -e "s/\(\/.*intel\)\/.*$/\1/")
-          ${MKDIR} -p ${REPOROOT}/licenses
-          ${CP} -u /opt/intel/licenses/* ${REPOROOT}/licenses 2>/dev/null
-          ${CP} -u ${LICSDIR}/licenses/* ${REPOROOT}/licenses 2>/dev/null
-          echo "export INTEL_LICENSE_FILE=${REPOROOT}/licenses" >> ${TESTSCRIPT}
-          echo "source "${CONFIGFILE}" """ >> ${TESTSCRIPT}
-        fi
+        LICSDIR=$(command -v icc | ${SED} -e "s/\(\/.*intel\)\/.*$/\1/")
+        ${MKDIR} -p ${REPOROOT}/licenses
+        ${CP} -u /opt/intel/licenses/* ${REPOROOT}/licenses 2>/dev/null
+        ${CP} -u ${LICSDIR}/licenses/* ${REPOROOT}/licenses 2>/dev/null
+        echo "export INTEL_LICENSE_FILE=${REPOROOT}/licenses" >> ${TESTSCRIPT}
+        # setup environment on a per-test basis
+        echo "if [ \"\" != \"${CONFIGFILE}\" ]; then" >> ${TESTSCRIPT}
+        echo "  if [ -e \"${ENVFILE}\" ]; then" >> ${TESTSCRIPT}
+        echo "    eval ${HERE}/tool_envrestore.sh \"${ENVFILE}\"" >> ${TESTSCRIPT}
+        echo "  fi" >> ${TESTSCRIPT}
+        echo "  source \"${CONFIGFILE}\" \"\"" >> ${TESTSCRIPT}
+        echo "fi" >> ${TESTSCRIPT}
         # record the current test case
-        if [ "$0" != "${SLURMFILE}" ] && [ -e ${SLURMFILE} ]; then
+        if [ "$0" != "${SLURMFILE}" ] && [ -e "${SLURMFILE}" ]; then
           DIR=$(cd $(dirname ${SLURMFILE}); pwd -P)
-          if [ -e ${DIR}/../Makefile ]; then
+          if [ -e "${DIR}/../Makefile" ]; then
             DIR=${DIR}/..
           fi
           echo "cd ${REPOROOT} && make \${MAKEJ} && cd ${DIR} && make \${MAKEJ}" >> ${TESTSCRIPT}
@@ -365,6 +367,14 @@ then
         if [ "" != "${SYNC}" ]; then # flush asynchronous NFS mount
           ${SYNC}
         fi
+      else
+        # setup environment on a per-test basis
+        if [ "" != "${CONFIGFILE}" ]; then
+          if [ -e "${ENVFILE}" ]; then
+            eval ${HERE}/tool_envrestore.sh "${ENVFILE}"
+          fi
+          source "${CONFIGFILE}" ""
+        fi
       fi
 
       COMMAND=$(eval echo "${ENVSTR} ${LAUNCH}")
@@ -384,7 +394,7 @@ then
       # exit the loop in case of an error
       if [ "0" != "${RESULT}" ]; then
         if [ "" != "${TOUCHFILE}" ]; then
-          ${RM} -f ${TOUCHFILE}
+          ${RM} -f "${TOUCHFILE}"
           TOUCHFILE=""
         fi
         break 4
@@ -399,7 +409,7 @@ then
     done # SLURMFILE
 
     # increment the case number, or exit the script
-    if [ "" = "$1" ] && [ "0" = "${RESULT}" ]; then
+    if [ "0" = "$1" ] && [ "0" = "${RESULT}" ]; then
       TESTID=$((TESTID+1))
     else # finish
       break
@@ -409,11 +419,11 @@ then
   done # TEST
 
   # remove temporary files
-  if [ "" != "${TESTSCRIPT}" ] && [ -e ${TESTSCRIPT} ]; then
-    ${RM} ${TESTSCRIPT}
+  if [ "" != "${TESTSCRIPT}" ] && [ -e "${TESTSCRIPT}" ]; then
+    ${RM} "${TESTSCRIPT}"
   fi
-  if [ "" != "${ENVFILE}" ] && [ -e ${ENVFILE} ]; then
-    ${RM} ${ENVFILE}
+  if [ "" != "${ENVFILE}" ] && [ -e "${ENVFILE}" ]; then
+    ${RM} "${ENVFILE}"
   fi
 
   # control log

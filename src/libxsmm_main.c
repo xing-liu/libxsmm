@@ -235,13 +235,14 @@ LIBXSMM_APIVAR_DEFINE(const char* internal_build_state);
 LIBXSMM_APIVAR_DEFINE(libxsmm_timer_tickint internal_timer_start);
 
 #if defined(_WIN32)
+# define INTERNAL_SINGLETON_HANDLE HANDLE
 # define INTERNAL_SINGLETON(HANDLE) (NULL != (HANDLE))
-LIBXSMM_APIVAR_DEFINE(HANDLE internal_singleton_handle);
 #else
+# define INTERNAL_SINGLETON_HANDLE int
 # define INTERNAL_SINGLETON(HANDLE) (0 <= (HANDLE) && 0 != *internal_singleton_fname)
 LIBXSMM_APIVAR_DEFINE(char internal_singleton_fname[64]);
-LIBXSMM_APIVAR_DEFINE(int internal_singleton_handle);
 #endif
+LIBXSMM_APIVAR_DEFINE(INTERNAL_SINGLETON_HANDLE internal_singleton_handle);
 
 /* definition of corresponding variables */
 LIBXSMM_APIVAR_PRIVATE_DEF(libxsmm_malloc_function libxsmm_default_malloc_fn);
@@ -465,11 +466,47 @@ LIBXSMM_API_INTERN size_t libxsmm_format_size(char buffer[32], int buffer_size, 
 }
 
 
+LIBXSMM_API_INTERN LIBXSMM_ATTRIBUTE_NO_TRACE void internal_dump(FILE* ostream, int urgent);
+LIBXSMM_API_INTERN void internal_dump(FILE* ostream, int urgent)
+{
+  char *const env_dump_build = getenv("LIBXSMM_DUMP_BUILD");
+  char *const env_dump_files = (NULL != getenv("LIBXSMM_DUMP_FILES")
+    ? getenv("LIBXSMM_DUMP_FILES")
+    : getenv("LIBXSMM_DUMP_FILE"));
+  LIBXSMM_ASSERT_MSG(INTERNAL_SINGLETON(internal_singleton_handle), "Invalid handle");
+  /* determine whether this instance is unique or not */
+  if (NULL != env_dump_files && 0 != *env_dump_files && 0 == urgent) { /* dump per-node info */
+    const char* filename = strtok(env_dump_files, INTERNAL_DELIMS);
+    for (; NULL != filename; filename = strtok(NULL, INTERNAL_DELIMS)) {
+      FILE* const file = fopen(filename, "r");
+      if (NULL != file) {
+        int c = fgetc(file);
+        fprintf(ostream, "\n\nLIBXSMM_DUMP_FILE: %s\n", filename);
+        /* coverity[tainted_data] */
+        while (EOF != c) {
+          fputc(c, stdout);
+          c = fgetc(file);
+        }
+        fputc('\n', stdout);
+        fclose(file);
+      }
+    }
+  }
+  if  (NULL != internal_build_state /* dump build state */
+    && NULL != env_dump_build && 0 != *env_dump_build)
+  {
+    const int dump_build = atoi(env_dump_build);
+    if (0 == urgent ? (0 < dump_build) : (0 > dump_build)) {
+      fprintf(ostream, "\n\nBUILD_DATE=%i\n", LIBXSMM_CONFIG_BUILD_DATE);
+      fprintf(ostream, "%s\n", internal_build_state);
+    }
+  }
+}
+
+
 LIBXSMM_API_INTERN void internal_finalize(void);
 LIBXSMM_API_INTERN void internal_finalize(void)
 {
-  char *const env_dump_build = getenv("LIBXSMM_DUMP_BUILD");
-  char *const env_dump_files = (NULL != getenv("LIBXSMM_DUMP_FILES") ? getenv("LIBXSMM_DUMP_FILES") : getenv("LIBXSMM_DUMP_FILE"));
   libxsmm_finalize();
   LIBXSMM_STDIO_ACQUIRE(); /* synchronize I/O */
   if (0 != libxsmm_verbosity) { /* print statistic on termination */
@@ -552,32 +589,8 @@ LIBXSMM_API_INTERN void internal_finalize(void)
     fprintf(stderr, "LIBXSMM ERROR: failed to perform final cleanup!\n");
   }
   /* determine whether this instance is unique or not */
-  if (INTERNAL_SINGLETON(internal_singleton_handle)) { /* dump per-node info */
-    if (NULL != env_dump_build || NULL != env_dump_files) {
-      if (NULL != env_dump_files && 0 != *env_dump_files) {
-        const char *filename = strtok(env_dump_files, INTERNAL_DELIMS);
-        for (; NULL != filename; filename = strtok(NULL, INTERNAL_DELIMS)) {
-          FILE *const file = fopen(filename, "r");
-          if (NULL != file) {
-            int c = fgetc(file);
-            fprintf(stdout, "\n\nLIBXSMM_DUMP_FILE: %s\n", filename);
-            /* coverity[tainted_data] */
-            while (EOF != c) {
-              fputc(c, stdout);
-              c = fgetc(file);
-            }
-            fputc('\n', stdout);
-            fclose(file);
-          }
-        }
-      }
-      if (NULL != env_dump_build && 0 != *env_dump_build && '0' != *env_dump_build) {
-        fprintf(stdout, "\n\nBUILD_DATE=%i\n", LIBXSMM_CONFIG_BUILD_DATE);
-        if (NULL != internal_build_state) {
-          fprintf(stdout, "%s\n", internal_build_state);
-        }
-      }
-    }
+  if (INTERNAL_SINGLETON(internal_singleton_handle)) {
+    internal_dump(stdout, 0/*urgent*/);
     /* cleanup singleton */
 #if defined(_WIN32)
     ReleaseMutex(internal_singleton_handle);
@@ -695,17 +708,17 @@ LIBXSMM_API_INTERN void internal_init(void)
   if (NULL == internal_registry) { /* double-check after acquiring the lock(s) */
 #if defined(LIBXSMM_INTERCEPT_DYNAMIC) && defined(LIBXSMM_AUTOPIN)
     /* clear error status (dummy condition: it does not matter if MPI_Init or MPI_Abort) */
-    const char *const dlsymname = (NULL == dlerror() ? "MPI_Init" : "MPI_Abort");
-    const void *const dlsymbol = dlsym(LIBXSMM_RTLD_NEXT, dlsymname);
-    const void *const dlmpi = (NULL == dlerror() ? dlsymbol : NULL);
+    const char* const dlsymname = (NULL == dlerror() ? "MPI_Init" : "MPI_Abort");
+    const void* const dlsymbol = dlsym(LIBXSMM_RTLD_NEXT, dlsymname);
+    const void* const dlmpi = (NULL == dlerror() ? dlsymbol : NULL);
 #endif
-    const char *const env_verbose = getenv("LIBXSMM_VERBOSE");
-    void *new_registry = NULL, *new_keys = NULL;
+    const char* const env_verbose = getenv("LIBXSMM_VERBOSE");
+    void* new_registry = NULL, * new_keys = NULL;
 #if defined(LIBXSMM_CACHE_MAXSIZE) && (0 < (LIBXSMM_CACHE_MAXSIZE))
 # if defined(LIBXSMM_NTHREADS_USE)
     void* new_cache = NULL;
 # endif
-    const char *const env_cache = getenv("LIBXSMM_CACHE");
+    const char* const env_cache = getenv("LIBXSMM_CACHE");
     if (NULL != env_cache && 0 != *env_cache) {
       const int cache_size = atoi(env_cache), cache_size2 = LIBXSMM_UP2POT(cache_size);
       internal_cache_size = LIBXSMM_MIN(cache_size2, LIBXSMM_CACHE_MAXSIZE);
@@ -723,9 +736,14 @@ LIBXSMM_API_INTERN void internal_init(void)
       libxsmm_verbosity = INT_MAX; /* quiet -> verbose */
     }
 #endif
+#if (0 == LIBXSMM_JIT)
+    if (LIBXSMM_VERBOSITY_WARN <= libxsmm_verbosity || 0 > libxsmm_verbosity) {
+      fprintf(stderr, "LIBXSMM: JIT-code generation was disabled at compile-time.\n");
+    }
+#endif
 #if defined(LIBXSMM_AUTOPIN)
 # if defined(LIBXSMM_INTERCEPT_DYNAMIC)
-    /* MPI: non-user affinity can slow-down unrelated jobs, e.g., CP2K regtests */
+    /* MPI: unwanted affinity can slow-down unrelated jobs (over-subscription), e.g., CP2K regtests */
     if (NULL == dlmpi)
 # endif
     { /* setup some viable affinity if nothing else is present */
@@ -743,22 +761,10 @@ LIBXSMM_API_INTERN void internal_init(void)
         }
       }
     }
-# if defined(LIBXSMM_INTERCEPT_DYNAMIC)
-    else {
-      if (NULL == getenv("I_MPI_PIN_DOMAIN")) {
-        static char pindomain[] = "I_MPI_PIN_DOMAIN=auto";
-        LIBXSMM_EXPECT(EXIT_SUCCESS, LIBXSMM_PUTENV(pindomain));
-      }
-      if (NULL == getenv("I_MPI_PIN_ORDER")) {
-        static char pinorder[] = "I_MPI_PIN_ORDER=bunch";
-        LIBXSMM_EXPECT(EXIT_SUCCESS, LIBXSMM_PUTENV(pinorder));
-      }
-#   if defined(LIBXSMM_MALLOC)
-      if (NULL == getenv("I_MPI_SHM_HEAP")) {
-        static char shmheap[] = "I_MPI_SHM_HEAP=1";
-        LIBXSMM_EXPECT(EXIT_SUCCESS, LIBXSMM_PUTENV(shmheap));
-      }
-#   endif
+# if defined(LIBXSMM_INTERCEPT_DYNAMIC) && defined(LIBXSMM_MALLOC)
+    else if (NULL == getenv("I_MPI_SHM_HEAP")) {
+      static char shmheap[] = "I_MPI_SHM_HEAP=1";
+      LIBXSMM_EXPECT(EXIT_SUCCESS, LIBXSMM_PUTENV(shmheap));
     }
 # endif
 #endif
@@ -1003,6 +1009,9 @@ LIBXSMM_API LIBXSMM_ATTRIBUTE_CTOR void libxsmm_init(void)
         libxsmm_timer_tickint s1, t1;
         libxsmm_cpuid_x86_info info;
         internal_init(); /* must be first to initialize verbosity, etc. */
+        if (INTERNAL_SINGLETON(internal_singleton_handle)) { /* after internal_init */
+          internal_dump(stdout, 1/*urgent*/);
+        }
         s1 = libxsmm_timer_tick_rtc(); t1 = libxsmm_timer_tick_tsc(); /* mid-timing */
         libxsmm_cpuid_x86(&info);
         if (0 != info.constant_tsc && t0 < t1) {
@@ -2344,41 +2353,36 @@ LIBXSMM_API int libxsmm_get_mcopykernel_info(libxsmm_xmcopyfunction kernel, libx
 LIBXSMM_API int libxsmm_get_registry_info(libxsmm_registry_info* info)
 {
   int result = EXIT_SUCCESS;
-  if (0 != info) {
-    LIBXSMM_INIT
-    if (0 != internal_registry) {
-      size_t i;
-      LIBXSMM_MEMZERO127(info); /* info->nstatic = 0; info->size = 0; */
-      info->nbytes = (LIBXSMM_CAPACITY_REGISTRY) * (sizeof(libxsmm_code_pointer) + sizeof(libxsmm_descriptor));
-      info->capacity = LIBXSMM_CAPACITY_REGISTRY;
+  LIBXSMM_INIT /* verbosity */
+  if (0 != info && 0 != internal_registry) {
+    size_t i;
+    LIBXSMM_MEMZERO127(info); /* info->nstatic = 0; info->size = 0; */
+    info->nbytes = (LIBXSMM_CAPACITY_REGISTRY) * (sizeof(libxsmm_code_pointer) + sizeof(libxsmm_descriptor));
+    info->capacity = LIBXSMM_CAPACITY_REGISTRY;
 #if defined(LIBXSMM_CACHE_MAXSIZE) && (0 < (LIBXSMM_CACHE_MAXSIZE))
-      info->ncache = internal_cache_size;
+    info->ncache = internal_cache_size;
 #else
-      info->ncache = 0;
+    info->ncache = 0;
 #endif
-      for (i = 0; i < (LIBXSMM_CAPACITY_REGISTRY); ++i) {
-        libxsmm_code_pointer code = internal_registry[i];
-        if (0 != code.ptr_const && EXIT_SUCCESS == result) {
-          if (0 == (LIBXSMM_CODE_STATIC & code.uval)) { /* check for allocated/generated JIT-code */
-            size_t buffer_size = 0;
-            void* buffer = 0;
+    for (i = 0; i < (LIBXSMM_CAPACITY_REGISTRY); ++i) {
+      libxsmm_code_pointer code = internal_registry[i];
+      if (0 != code.ptr_const && EXIT_SUCCESS == result) {
+        if (0 == (LIBXSMM_CODE_STATIC & code.uval)) { /* check for allocated/generated JIT-code */
+          size_t buffer_size = 0;
+          void* buffer = 0;
 #if defined(LIBXSMM_HASH_COLLISION)
-            code.uval &= ~LIBXSMM_HASH_COLLISION; /* clear collision flag */
+          code.uval &= ~LIBXSMM_HASH_COLLISION; /* clear collision flag */
 #endif
-            result = libxsmm_get_malloc_xinfo(code.ptr_const, &buffer_size, NULL/*flags*/, &buffer);
-            if (EXIT_SUCCESS == result) {
-              info->nbytes += LIBXSMM_UP2(buffer_size + (((char*)code.ptr_const) - (char*)buffer), LIBXSMM_PAGE_MINSIZE);
-            }
+          result = libxsmm_get_malloc_xinfo(code.ptr_const, &buffer_size, NULL/*flags*/, &buffer);
+          if (EXIT_SUCCESS == result) {
+            info->nbytes += LIBXSMM_UP2(buffer_size + (((char*)code.ptr_const) - (char*)buffer), LIBXSMM_PAGE_MINSIZE);
           }
-          else {
-            ++info->nstatic;
-          }
-          ++info->size;
         }
+        else {
+          ++info->nstatic;
+        }
+        ++info->size;
       }
-    }
-    else {
-      result = EXIT_FAILURE;
     }
   }
   else {
@@ -2392,6 +2396,7 @@ LIBXSMM_API void* libxsmm_xregister(const void* key, size_t key_size, size_t val
 {
   static int error_once = 0;
   void* result;
+  LIBXSMM_INIT /* verbosity */
   if (NULL != key && 0 < key_size && LIBXSMM_DESCRIPTOR_MAXSIZE >= key_size) {
     libxsmm_descriptor wrap;
     void* dst;
@@ -2400,7 +2405,6 @@ LIBXSMM_API void* libxsmm_xregister(const void* key, size_t key_size, size_t val
 #endif
     LIBXSMM_MEMCPY127(wrap.user.desc, key, key_size);
     wrap.kind = LIBXSMM_KERNEL_KIND_USER;
-    LIBXSMM_INIT
     dst = internal_find_code(&wrap, key_size, value_size).ptr;
     if (NULL != dst) {
       size_t size;
@@ -2442,6 +2446,7 @@ LIBXSMM_API void* libxsmm_xregister(const void* key, size_t key_size, size_t val
 LIBXSMM_API void* libxsmm_xdispatch(const void* key, size_t key_size)
 {
   void* result;
+  LIBXSMM_INIT /* verbosity */
 #if !defined(NDEBUG)
   if (NULL != key && 0 < key_size && LIBXSMM_DESCRIPTOR_MAXSIZE >= key_size)
 #endif
@@ -2452,7 +2457,6 @@ LIBXSMM_API void* libxsmm_xdispatch(const void* key, size_t key_size)
 #endif
     LIBXSMM_MEMCPY127(wrap.user.desc, key, key_size);
     wrap.kind = LIBXSMM_KERNEL_KIND_USER;
-    LIBXSMM_INIT
     result = internal_find_code(&wrap, key_size, 0/*user_size*/).ptr;
   }
 #if !defined(NDEBUG)
@@ -2479,6 +2483,7 @@ LIBXSMM_API void libxsmm_xrelease(const void* key, size_t key_size)
 LIBXSMM_API libxsmm_xmmfunction libxsmm_xmmdispatch(const libxsmm_gemm_descriptor* descriptor)
 {
   libxsmm_xmmfunction result;
+  LIBXSMM_INIT /* verbosity */
   if (NULL != descriptor) {
     libxsmm_descriptor wrap;
 #if defined(LIBXSMM_UNPACKED) /* TODO: investigate (CCE) */
@@ -2489,7 +2494,6 @@ LIBXSMM_API libxsmm_xmmfunction libxsmm_xmmdispatch(const libxsmm_gemm_descripto
     if (0 != (0x80 & descriptor->prefetch)) { /* "sign"-bit of byte-value is set */
       wrap.gemm.desc.prefetch = (unsigned char)libxsmm_get_gemm_prefetch(LIBXSMM_PREFETCH_AUTO);
     }
-    LIBXSMM_INIT
     result = internal_find_code(&wrap, sizeof(*descriptor), 0/*user_size*/).xgemm;
 #if defined(_DEBUG)
     if (LIBXSMM_VERBOSITY_HIGH <= libxsmm_verbosity && INT_MAX != libxsmm_verbosity && NULL != result.xmm) {
@@ -3800,9 +3804,9 @@ LIBXSMM_API libxsmm_sububmmfunction_reducebatch_strd libxsmm_sububmmdispatch_red
 LIBXSMM_API libxsmm_xmcopyfunction libxsmm_dispatch_mcopy(const libxsmm_mcopy_descriptor* descriptor)
 {
   libxsmm_xmcopyfunction result;
+  LIBXSMM_INIT /* verbosity */
   if (NULL != descriptor) {
     libxsmm_descriptor wrap;
-    LIBXSMM_INIT
 #if defined(LIBXSMM_UNPACKED) /* TODO: investigate (CCE) */
     LIBXSMM_MEMSET127(&wrap, 0, sizeof(*descriptor));
 #endif
@@ -3823,9 +3827,9 @@ LIBXSMM_API libxsmm_xmcopyfunction libxsmm_dispatch_mcopy(const libxsmm_mcopy_de
 LIBXSMM_API libxsmm_xtransfunction libxsmm_dispatch_trans(const libxsmm_trans_descriptor* descriptor)
 {
   libxsmm_xtransfunction result;
+  LIBXSMM_INIT /* verbosity */
   if (NULL != descriptor) {
     libxsmm_descriptor wrap;
-    LIBXSMM_INIT
 #if defined(LIBXSMM_UNPACKED) /* TODO: investigate (CCE) */
     LIBXSMM_MEMSET127(&wrap, 0, sizeof(*descriptor));
 #endif
@@ -3843,9 +3847,9 @@ LIBXSMM_API libxsmm_xtransfunction libxsmm_dispatch_trans(const libxsmm_trans_de
 LIBXSMM_API libxsmm_pgemm_xfunction libxsmm_dispatch_pgemm(const libxsmm_pgemm_descriptor* descriptor)
 {
   libxsmm_trmm_xfunction result;
+  LIBXSMM_INIT /* verbosity */
   if (NULL != descriptor) {
     libxsmm_descriptor wrap;
-    LIBXSMM_INIT
 #if defined(LIBXSMM_UNPACKED) /* TODO: investigate (CCE) */
     LIBXSMM_MEMSET127(&wrap, 0, sizeof(*descriptor));
 #endif
@@ -3863,9 +3867,9 @@ LIBXSMM_API libxsmm_pgemm_xfunction libxsmm_dispatch_pgemm(const libxsmm_pgemm_d
 LIBXSMM_API libxsmm_getrf_xfunction libxsmm_dispatch_getrf(const libxsmm_getrf_descriptor* descriptor)
 {
   libxsmm_trmm_xfunction result;
+  LIBXSMM_INIT /* verbosity */
   if (NULL != descriptor) {
     libxsmm_descriptor wrap;
-    LIBXSMM_INIT
 #if defined(LIBXSMM_UNPACKED) /* TODO: investigate (CCE) */
     LIBXSMM_MEMSET127(&wrap, 0, sizeof(*descriptor));
 #endif
@@ -3883,9 +3887,9 @@ LIBXSMM_API libxsmm_getrf_xfunction libxsmm_dispatch_getrf(const libxsmm_getrf_d
 LIBXSMM_API libxsmm_trmm_xfunction libxsmm_dispatch_trmm(const libxsmm_trmm_descriptor* descriptor)
 {
   libxsmm_trmm_xfunction result;
+  LIBXSMM_INIT /* verbosity */
   if (NULL != descriptor) {
     libxsmm_descriptor wrap;
-    LIBXSMM_INIT
 #if defined(LIBXSMM_UNPACKED) /* TODO: investigate (CCE) */
     LIBXSMM_MEMSET127(&wrap, 0, sizeof(*descriptor));
 #endif
@@ -3903,9 +3907,9 @@ LIBXSMM_API libxsmm_trmm_xfunction libxsmm_dispatch_trmm(const libxsmm_trmm_desc
 LIBXSMM_API libxsmm_trsm_xfunction libxsmm_dispatch_trsm(const libxsmm_trsm_descriptor* descriptor)
 {
   libxsmm_trsm_xfunction result;
+  LIBXSMM_INIT /* verbosity */
   if (NULL != descriptor) {
     libxsmm_descriptor wrap;
-    LIBXSMM_INIT
 #if defined(LIBXSMM_UNPACKED) /* TODO: investigate (CCE) */
     LIBXSMM_MEMSET127(&wrap, 0, sizeof(*descriptor));
 #endif
@@ -4332,6 +4336,71 @@ LIBXSMM_API void LIBXSMM_FSYMBOL(libxsmm_xmmcall)(
   const void* pa, const void* pb, const void* pc)
 {
   LIBXSMM_FSYMBOL(libxsmm_xmmcall_prf)(fn, a, b, c, pa, pb, pc);
+}
+
+
+/* implementation provided for Fortran 77 compatibility */
+LIBXSMM_API void LIBXSMM_FSYMBOL(libxsmm_xregister)(void** /*regval*/,
+  const void* /*key*/, const int* /*keysize*/, const int* /*valsize*/, const void* /*valinit*/);
+LIBXSMM_API void LIBXSMM_FSYMBOL(libxsmm_xregister)(void** regval,
+  const void* key, const int* keysize, const int* valsize, const void* valinit)
+{
+#if !defined(NDEBUG)
+  static int error_once = 0;
+  if (NULL != regval && NULL != key && NULL != keysize && NULL != valsize)
+#endif
+  {
+    *regval = libxsmm_xregister(key, *keysize, *valsize, valinit);
+  }
+#if !defined(NDEBUG)
+  else if (0 != libxsmm_verbosity /* library code is expected to be mute */
+    && 1 == LIBXSMM_ATOMIC_ADD_FETCH(&error_once, 1, LIBXSMM_ATOMIC_RELAXED))
+  {
+    fprintf(stderr, "LIBXSMM ERROR: invalid arguments for libxsmm_xregister specified!\n");
+  }
+#endif
+}
+
+
+/* implementation provided for Fortran 77 compatibility */
+LIBXSMM_API void LIBXSMM_FSYMBOL(libxsmm_xdispatch)(void** /*regval*/, const void* /*key*/, const int* /*keysize*/);
+LIBXSMM_API void LIBXSMM_FSYMBOL(libxsmm_xdispatch)(void** regval, const void* key, const int* keysize)
+{
+#if !defined(NDEBUG)
+  static int error_once = 0;
+  if (NULL != regval && NULL != key && NULL != keysize)
+#endif
+  {
+    *regval = libxsmm_xdispatch(key, *keysize);
+  }
+#if !defined(NDEBUG)
+  else if (0 != libxsmm_verbosity /* library code is expected to be mute */
+    && 1 == LIBXSMM_ATOMIC_ADD_FETCH(&error_once, 1, LIBXSMM_ATOMIC_RELAXED))
+  {
+    fprintf(stderr, "LIBXSMM ERROR: invalid arguments for libxsmm_xdispatch specified!\n");
+  }
+#endif
+}
+
+
+/* implementation provided for Fortran 77 compatibility */
+LIBXSMM_API void LIBXSMM_FSYMBOL(libxsmm_xrelease)(const void* /*key*/, const int* /*keysize*/);
+LIBXSMM_API void LIBXSMM_FSYMBOL(libxsmm_xrelease)(const void* key, const int* keysize)
+{
+#if !defined(NDEBUG)
+  static int error_once = 0;
+  if (NULL != key && NULL != keysize)
+#endif
+  {
+    libxsmm_xrelease(key, *keysize);
+  }
+#if !defined(NDEBUG)
+  else if (0 != libxsmm_verbosity /* library code is expected to be mute */
+    && 1 == LIBXSMM_ATOMIC_ADD_FETCH(&error_once, 1, LIBXSMM_ATOMIC_RELAXED))
+  {
+    fprintf(stderr, "LIBXSMM ERROR: invalid arguments for libxsmm_xrelease specified!\n");
+  }
+#endif
 }
 
 #endif /*defined(LIBXSMM_BUILD) && (!defined(LIBXSMM_NOFORTRAN) || defined(__clang_analyzer__))*/
